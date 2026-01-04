@@ -1,0 +1,171 @@
+{
+    "toolbar": {
+        "redo": "Повторить",
+        "undo": "Отменить",
+        "copy_styles": "Копировать стили",
+        "clear_formatting": "Очистить форматирование",
+        "euro": "Формат Евро",
+        "percentage": "Формат Процент",
+        "bold": "Жирный",
+        "italic": "Курсив",
+        "underline": "Подчёркнутый",
+        "strike_through": "Зачёркнутый",
+        "align_left": "По левому краю",
+        "align_right": "По правому краю",
+        "align_center": "По центру",
+        "format_number": "Формат числа",
+        "font_color": "Цвет шрифта",
+        "fill_color": "Цвет заливки",
+        "increase_font_size": "Увеличить шрифт",
+        "decrease_font_size": "Уменьшить шрифт",
+        "decimal_places_increase": "Добавить разряд",
+        "decimal_places_decrease": "Убрать разряд",
+        "show_hide_grid_lines": "Показать/скрыть сетку",
+        "named_ranges": "Именованные диапазоны",
+        "vertical_align_bottom": "По нижнему краю",
+        "vertical_align_middle": "По середине",
+        "vertical_align_top": "По верхнему краю",
+        "selected_png": "Экспорт области в PNG",
+        "wrap_text": "Перенос текста",
+        "scroll_left": "Прокрутить влево",
+        "scroll_right": "Прокрутить вправо",
+        "format_menu": {
+            "auto": "Авто",
+            "number": "Число",
+            "percentage": "Процент",
+            "currency_eur": "Евро (EUR)",
+            "currency_usd": "Доллар (USD)",
+            "currency_gbp": "Фунт стерлингов (GBP)",
+            "date_short": "Краткая дата",
+            "date_long": "Полная дата",
+            "custom": "Другой",
+            "number_example": "1 000,00",
+            "percentage_example": "10%",
+            "currency_eur_example": "€",
+            "currency_usd_example": "$",
+            "currency_gbp_example": "£",
+            "date_short_example": "24.09.2024",
+            "date_long_example": "Вторник, 24 сентября 2024 г."
+        },
+        "borders": {
+            "title": "Границы",
+            "all": "Все границы",
+            "inner": "Внутренние границы",
+            "outer": "Внешние границы",
+            "top": "Верхняя граница",
+            "bottom": "Нижняя граница",
+            "clear": "Убрать границы",
+            "left": "Левая граница",
+            "right": "Правая граница",
+            "horizontal": "Горизонтальные границы",
+            "vertical": "Вертикальные границы",
+            "color": "Цвет границы",
+            "style": "Стиль границы"
+        }
+    },
+    "num_fmt": {
+        "title": "Пользовательский формат числа",
+        "label": "Формат числа",
+        "close": "Закрыть",
+        "save": "Сохранить"
+    },
+    "sheet_rename": {
+        "rename": "Сохранить",
+        "label": "Новое имя",
+        "title": "Переименовать лист",
+        "close": "Закрыть"
+    },
+    "sheet_delete": {
+        "title": "Вы уверены?",
+        "message": "Лист '{{sheetName}}' будет удалён.",
+        "confirm": "Да, удалить лист",
+        "cancel": "Отмена"
+    },
+    "sheet_tab": {
+        "rename": "Переименовать",
+        "change_color": "Изменить цвет",
+        "delete": "Удалить",
+        "hide_sheet": "Скрыть лист"
+    },
+    "formula_input": {
+        "update": "Обновить",
+        "label": "Формула",
+        "title": "Изменить формулу"
+    },
+    "formula_bar": {
+        "manage_named_ranges": "Управление именованными диапазонами"
+    },
+    "navigation": {
+        "add_sheet": "Добавить лист",
+        "sheet_list": "Список листов",
+        "link": "Открыть ironcalc.com"
+    },
+    "name_manager_dialog": {
+        "title": "Именованные диапазоны",
+        "empty_message1": "Именованных диапазонов пока нет.",
+        "empty_message2": "Нажмите 'Добавить', чтобы создать.",
+        "name": "Имя",
+        "range": "Область",
+        "scope": "Диапазон",
+        "help": "Об именованных диапазонах",
+        "new": "Добавить",
+        "workbook": "Книга",
+        "global": "(Глобальный)",
+        "close": "Закрыть",
+        "delete": "Удалить диапазон",
+        "edit": "Редактировать диапазон",
+        "back_to_list": "Назад к списку",
+        "add_new_range": "Добавить новый диапазон",
+        "edit_range": "Редактировать диапазон",
+        "new_named_range": "Новый именованный диапазон",
+        "range_name": "Имя диапазона",
+        "enter_range_name": "Введите имя диапазона",
+        "scope_label": "Область видимости",
+        "scope_helper": "Область видимости определяет, где доступен именованный диапазон.",
+        "refers_to": "Ссылается на",
+        "enter_formula": "Введите формулу",
+        "cancel": "Отмена",
+        "apply": "Применить",
+        "discard": "Отменить изменения",
+        "errors": {
+            "range_name_required": "Имя диапазона обязательно",
+            "name_cannot_contain_spaces": "Имя не может содержать пробелы",
+            "name_cannot_start_with_number": "Имя не может начинаться с цифры",
+            "name_invalid_characters": "Имя содержит недопустимые символы. Используйте только буквы, цифры, подчёркивания и точки. Должно начинаться с буквы или подчёркивания.",
+            "name_already_exists": "Это имя уже существует в выбранной области"
+        }
+    },
+    "cell_context": {
+        "insert_row_above": "Вставить строку выше",
+        "insert_row_below": "Вставить строку ниже",
+        "insert_column_before": "Вставить столбец слева",
+        "insert_column_after": "Вставить столбец справа",
+        "freeze_columns": "Закрепить до столбца '{{column}}'",
+        "freeze_rows": "Закрепить до строки '{{row}}'",
+        "unfreeze_rows": "Открепить строки",
+        "unfreeze_columns": "Открепить столбцы",
+        "delete_row": "Удалить строку '{{row}}'",
+        "delete_column": "Удалить столбец '{{column}}'",
+        "freeze": "Закрепить",
+        "insert_row": "Вставить строку",
+        "insert_column": "Вставить столбец",
+        "move_row": "Переместить строку",
+        "move_column": "Переместить столбец",
+        "move_row_up": "Переместить строку вверх",
+        "move_row_down": "Переместить строку вниз",
+        "move_column_left": "Переместить столбец влево",
+        "move_column_right": "Переместить столбец вправо"
+    },
+    "color_picker": {
+        "apply": "Добавить цвет",
+        "cancel": "Отмена",
+        "add": "Добавить новый цвет",
+        "default": "Цвет по умолчанию",
+        "no_fill": "Без заливки",
+        "custom": "Другой"
+    },
+    "right_drawer": {
+        "close": "Закрыть",
+        "resize_drawer": "Изменить размер панели"
+    }
+}

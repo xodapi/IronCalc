@@ -4,7 +4,7 @@
             "true": "TRUE",
             "false": "FALSE"
         },
-        "errors":{
+        "errors": {
             "ref": "#REF!",
             "name": "#NAME?",
             "value": "#VALUE!",
@@ -24,7 +24,7 @@
             "true": "WAHR",
             "false": "FALSCH"
         },
-        "errors":{
+        "errors": {
             "ref": "#BEZUG!",
             "name": "#NAME?",
             "value": "#WERT!",
@@ -37,14 +37,14 @@
             "null": "#NULL!",
             "calc": "#CALC!",
             "circ": "#CIRC!"
-          }
+        }
     },
     "fr": {
         "booleans": {
             "true": "VRAI",
             "false": "FAUX"
         },
-        "errors":{
+        "errors": {
             "ref": "#REF!",
             "name": "#NOM?",
             "value": "#VALEUR!",
@@ -77,6 +77,26 @@
             "null": "#NULL!",
             "calc": "#CALC!",
             "circ": "#CIRC!"
+        }
+    },
+    "ru": {
+        "booleans": {
+            "true": "ИСТИНА",
+            "false": "ЛОЖЬ"
+        },
+        "errors": {
+            "ref": "#ССЫЛКА!",
+            "name": "#ИМЯ?",
+            "value": "#ЗНАЧ!",
+            "div": "#ДЕЛ/0!",
+            "na": "#Н/Д",
+            "num": "#ЧИСЛО!",
+            "error": "#ОШИБКА!",
+            "nimpl": "#Н/РЕАЛИЗ!",
+            "spill": "#ПЕРЕЛИВ!",
+            "null": "#ПУСТО!",
+            "calc": "#ВЫЧИСЛ!",
+            "circ": "#ЦИКЛ!"
         }
     }
 }
