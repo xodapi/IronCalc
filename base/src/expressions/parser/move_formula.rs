@@ -431,5 +431,14 @@ fn to_string_moved(node: &Node, move_context: &MoveContext) -> String {
         } => {
             format!("@{}", to_string_moved(child, move_context))
         }
+        CallKind { callee, args } => {
+            // Format call chain: callee(arg1, arg2, ...)
+            let callee_str = to_string_moved(callee, move_context);
+            let args_str = args.iter()
+                .map(|a| to_string_moved(a, move_context))
+                .collect::<Vec<_>>()
+                .join(",");
+            format!("{}({})", callee_str, args_str)
+        }
     }
 }

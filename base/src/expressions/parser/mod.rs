@@ -198,6 +198,11 @@ pub enum Node {
         message: String,
         position: usize,
     },
+    /// Call chain: callee(args) where callee is a Node that returns a callable (e.g., LAMBDA)
+    CallKind {
+        callee: Box<Node>,
+        args: Vec<Node>,
+    },
     EmptyArgKind,
 }
 
@@ -718,10 +723,34 @@ impl Parser {
                         };
                     }
                     if let Some(function_kind) = Function::get_function(&name) {
-                        return Node::FunctionKind {
-                            kind: function_kind,
+                        let mut result = Node::FunctionKind {
+                            kind: function_kind.clone(),
                             args,
                         };
+                        
+                        // Check for call chain: LAMBDA(x, x+1)(5)
+                        // Only LAMBDA can return a callable value
+                        if function_kind == Function::Lambda {
+                            while self.lexer.peek_token() == TokenType::LeftParenthesis {
+                                self.lexer.advance_token();
+                                let call_args = match self.parse_function_args() {
+                                    Ok(s) => s,
+                                    Err(e) => return e,
+                                };
+                                if let Err(err) = self.lexer.expect(TokenType::RightParenthesis) {
+                                    return Node::ParseErrorKind {
+                                        formula: self.lexer.get_formula(),
+                                        position: err.position,
+                                        message: err.message,
+                                    };
+                                }
+                                result = Node::CallKind {
+                                    callee: Box::new(result),
+                                    args: call_args,
+                                };
+                            }
+                        }
+                        return result;
                     }
                     if &name == "_xlfn.SINGLE" {
                         if args.len() != 1 {

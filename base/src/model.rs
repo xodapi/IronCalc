@@ -512,6 +512,70 @@ impl Model {
                 }
                 _ => self.evaluate_node_in_context(child, cell),
             },
+            CallKind { callee, args } => {
+                // Evaluate the callee - should return a Lambda
+                // For now, evaluate the lambda definition first
+                let lambda_result = self.evaluate_node_in_context(callee, cell);
+                
+                // Check if we got a LAMBDA function node - if so, evaluate with args
+                match callee.as_ref() {
+                    FunctionKind { kind: crate::functions::Function::Lambda, args: lambda_args } => {
+                        // LAMBDA(param1, param2, ..., body)(arg1, arg2, ...)
+                        // The last element of lambda_args is the body
+                        // All preceding elements are parameter names
+                        if lambda_args.is_empty() {
+                            return CalcResult::new_error(
+                                Error::VALUE,
+                                cell,
+                                "LAMBDA requires at least a body expression".to_string(),
+                            );
+                        }
+                        
+                        let param_count = lambda_args.len() - 1;
+                        let body = &lambda_args[lambda_args.len() - 1];
+                        
+                        // Check argument count matches parameters
+                        if args.len() != param_count {
+                            return CalcResult::new_error(
+                                Error::VALUE,
+                                cell,
+                                format!(
+                                    "LAMBDA expected {} arguments but got {}",
+                                    param_count,
+                                    args.len()
+                                ),
+                            );
+                        }
+                        
+                        // For a simple implementation, we can only handle cases where
+                        // the body is a simple expression that uses the parameters
+                        // Full implementation would require variable binding
+                        
+                        // Simple case: no parameters, just evaluate body
+                        if param_count == 0 {
+                            return self.evaluate_node_in_context(body, cell);
+                        }
+                        
+                        // For now, return #CALC! as we need proper scope implementation
+                        CalcResult::new_error(
+                            Error::CALC,
+                            cell,
+                            "LAMBDA with parameters requires scope implementation".to_string(),
+                        )
+                    }
+                    _ => {
+                        // Not a lambda, but was called - error
+                        if lambda_result.is_error() {
+                            return lambda_result;
+                        }
+                        CalcResult::new_error(
+                            Error::VALUE,
+                            cell,
+                            "Cannot call a non-function value".to_string(),
+                        )
+                    }
+                }
+            }
         }
     }
 

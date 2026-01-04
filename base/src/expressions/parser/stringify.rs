@@ -541,6 +541,7 @@ fn stringify(
                 | OpSumKind { .. }
                 | CompareKind { .. }
                 | ImplicitIntersection { .. }
+                | CallKind { .. }
                 | EmptyArgKind => format!(
                     "({})",
                     stringify(left, context, displace_data, export_to_excel)
@@ -572,6 +573,7 @@ fn stringify(
                 | OpSumKind { .. }
                 | CompareKind { .. }
                 | ImplicitIntersection { .. }
+                | CallKind { .. }
                 | EmptyArgKind => format!(
                     "({})",
                     stringify(right, context, displace_data, export_to_excel)
@@ -642,7 +644,7 @@ fn stringify(
                     | ParseErrorKind { .. }
                     | EmptyArgKind => false,
 
-                    OpPowerKind { .. } | OpSumKind { .. } | UnaryKind { .. } => true,
+                    OpPowerKind { .. } | OpSumKind { .. } | UnaryKind { .. } | CallKind { .. } => true,
                 };
                 if needs_parentheses {
                     format!(
@@ -692,6 +694,14 @@ fn stringify(
                 "@{}",
                 stringify(child, context, displace_data, export_to_excel)
             )
+        }
+        CallKind { callee, args } => {
+            let callee_str = stringify(callee, context, displace_data, export_to_excel);
+            let args_str = args.iter()
+                .map(|a| stringify(a, context, displace_data, export_to_excel))
+                .collect::<Vec<_>>()
+                .join(",");
+            format!("{}({})", callee_str, args_str)
         }
     }
 }
@@ -798,6 +808,7 @@ pub(crate) fn rename_sheet_in_node(node: &mut Node, sheet_index: u32, new_name: 
         Node::TableNameKind(_) => {}
         Node::WrongVariableKind(_) => {}
         Node::EmptyArgKind => {}
+        Node::CallKind { .. } => {}
     }
 }
 
@@ -885,5 +896,6 @@ pub(crate) fn rename_defined_name_in_node(
         Node::WrongRangeKind { .. } => {}
         Node::TableNameKind(_) => {}
         Node::WrongVariableKind(_) => {}
+        Node::CallKind { .. } => {}
     }
 }
