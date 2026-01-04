@@ -116,6 +116,8 @@ pub struct Model {
     pub(crate) tz: Tz,
     /// The view id. A view consists of a selected sheet and ranges.
     pub(crate) view_id: u32,
+    /// Lambda scope for variable binding during LAMBDA evaluation
+    pub(crate) lambda_scope: HashMap<String, CalcResult>,
 }
 
 // FIXME: Maybe this should be the same as CellReference
@@ -413,11 +415,17 @@ impl Model {
                 cell,
                 format!("table name \"{s}\" not supported."),
             ),
-            WrongVariableKind(s) => CalcResult::new_error(
-                Error::NAME,
-                cell,
-                format!("Variable name \"{s}\" not found."),
-            ),
+            WrongVariableKind(s) => {
+                // Check if this variable is bound in lambda scope
+                if let Some(value) = self.lambda_scope.get(s) {
+                    return value.clone();
+                }
+                CalcResult::new_error(
+                    Error::NAME,
+                    cell,
+                    format!("Variable name \"{}\" not found.", s),
+                )
+            }
             CompareKind { kind, left, right } => {
                 let l = self.evaluate_node_in_context(left, cell);
                 if l.is_error() {
@@ -513,16 +521,12 @@ impl Model {
                 _ => self.evaluate_node_in_context(child, cell),
             },
             CallKind { callee, args } => {
-                // Evaluate the callee - should return a Lambda
-                // For now, evaluate the lambda definition first
-                let lambda_result = self.evaluate_node_in_context(callee, cell);
-                
                 // Check if we got a LAMBDA function node - if so, evaluate with args
                 match callee.as_ref() {
                     FunctionKind { kind: crate::functions::Function::Lambda, args: lambda_args } => {
                         // LAMBDA(param1, param2, ..., body)(arg1, arg2, ...)
                         // The last element of lambda_args is the body
-                        // All preceding elements are parameter names
+                        // All preceding elements are parameter names (WrongVariableKind nodes)
                         if lambda_args.is_empty() {
                             return CalcResult::new_error(
                                 Error::VALUE,
@@ -547,26 +551,53 @@ impl Model {
                             );
                         }
                         
-                        // For a simple implementation, we can only handle cases where
-                        // the body is a simple expression that uses the parameters
-                        // Full implementation would require variable binding
-                        
                         // Simple case: no parameters, just evaluate body
                         if param_count == 0 {
                             return self.evaluate_node_in_context(body, cell);
                         }
                         
-                        // For now, return #CALC! as we need proper scope implementation
-                        CalcResult::new_error(
-                            Error::CALC,
-                            cell,
-                            "LAMBDA with parameters requires scope implementation".to_string(),
-                        )
+                        // Extract parameter names and bind to argument values
+                        // Save the old scope to restore it later (for nested lambdas)
+                        let old_scope = self.lambda_scope.clone();
+                        
+                        for i in 0..param_count {
+                            let param = &lambda_args[i];
+                            // Parameter should be a WrongVariableKind (identifier)
+                            if let WrongVariableKind(param_name) = param {
+                                // Evaluate the argument
+                                let arg_value = self.evaluate_node_in_context(&args[i], cell);
+                                if arg_value.is_error() {
+                                    // Restore scope and return error
+                                    self.lambda_scope = old_scope;
+                                    return arg_value;
+                                }
+                                // Bind parameter to value
+                                self.lambda_scope.insert(param_name.clone(), arg_value);
+                            } else {
+                                // Parameter is not an identifier
+                                self.lambda_scope = old_scope;
+                                return CalcResult::new_error(
+                                    Error::VALUE,
+                                    cell,
+                                    format!("LAMBDA parameter {} is not a valid identifier", i + 1),
+                                );
+                            }
+                        }
+                        
+                        // Evaluate the body with the new scope
+                        let result = self.evaluate_node_in_context(body, cell);
+                        
+                        // Restore the old scope
+                        self.lambda_scope = old_scope;
+                        
+                        result
                     }
                     _ => {
                         // Not a lambda, but was called - error
-                        if lambda_result.is_error() {
-                            return lambda_result;
+                        // First evaluate the callee
+                        let callee_result = self.evaluate_node_in_context(callee, cell);
+                        if callee_result.is_error() {
+                            return callee_result;
                         }
                         CalcResult::new_error(
                             Error::VALUE,
@@ -992,6 +1023,7 @@ impl Model {
             locale,
             tz,
             view_id: 0,
+            lambda_scope: HashMap::new(),
         };
 
         model.parse_formulas();

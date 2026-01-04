@@ -427,6 +427,7 @@ impl Model {
             language,
             tz,
             view_id: 0,
+            lambda_scope: HashMap::new(),
         };
         model.parse_formulas();
         Ok(model)
