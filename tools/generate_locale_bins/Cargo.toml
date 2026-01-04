@@ -1,0 +1,15 @@
+[package]
+name = "generate_locale_bins"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "generate_locale_bins"
+path = "src/main.rs"
+
+[workspace]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bitcode = "0.6.8"

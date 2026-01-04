@@ -1,0 +1,6 @@
+# Override parent workspace config to use crates.io directly
+[source.crates-io]
+registry = "https://github.com/rust-lang/crates.io-index"
+
+[net]
+offline = false

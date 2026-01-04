@@ -99,3 +99,26 @@ fn test_english_with_spanish_words() {
     assert_eq!(lx.next_token(), TokenType::RightParenthesis);
     assert_eq!(lx.next_token(), TokenType::EOF);
 }
+
+// Russian
+
+#[test]
+fn test_istina_lozh() {
+    let mut lx = new_language_lexer("IF(A1, ИСТИНА, ЛОЖЬ)", "ru");
+    assert_eq!(lx.next_token(), TokenType::Ident("IF".to_string()));
+    assert_eq!(lx.next_token(), TokenType::LeftParenthesis);
+    assert!(matches!(lx.next_token(), TokenType::Reference { .. }));
+    assert_eq!(lx.next_token(), TokenType::Comma);
+    assert_eq!(lx.next_token(), TokenType::Boolean(true));
+    assert_eq!(lx.next_token(), TokenType::Comma);
+    assert_eq!(lx.next_token(), TokenType::Boolean(false));
+    assert_eq!(lx.next_token(), TokenType::RightParenthesis);
+    assert_eq!(lx.next_token(), TokenType::EOF);
+}
+
+#[test]
+fn test_russian_errors_ref() {
+    let mut lx = new_language_lexer("#ССЫЛКА!", "ru");
+    assert_eq!(lx.next_token(), TokenType::Error(Error::REF));
+    assert_eq!(lx.next_token(), TokenType::EOF);
+}

@@ -1,0 +1,1376 @@
+From 2f83e0754babd5e0277576ebd50471bfef531c74 Mon Sep 17 00:00:00 2001
+From: Sergey Bogorad <faneropi@gmail.com>
+Date: Sun, 4 Jan 2026 20:46:22 +0700
+Subject: [PATCH] feat: Add Russian localization support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Add Russian locale (ru) to locales.json with dates, numbers, currency (RUB)
+- Add Russian language to language.json with TRUE/FALSE and error messages
+- Add ~160 Russian function names to get_function() in mod.rs
+- Add ru_ru.json webapp UI translation (~170 strings)
+- Register Russian locale in i18n.ts
+
+Includes translations for:
+- Logical: ЕСЛИ, И, ИЛИ, НЕ, ИСТИНА, ЛОЖЬ
+- Math: СУММ, ОКРУГЛ, КОРЕНЬ, СТЕПЕНЬ, АБС, МАКС, МИН
+- Financial: ПЛТ, ПС, СТАВКА, ВСД, ЧПС
+- Lookup: ВПР, ГПР, ИНДЕКС, ПОИСКПОЗ
+- Text: СЦЕПИТЬ, ЛЕВСИМВ, ПРАВСИМВ, ТЕКСТ
+- Date/Time: ДАТА, СЕГОДНЯ, ГОД, МЕСЯЦ
+- Engineering: БИН.В.ДЕС, КОМПЛЕКСН, МНИМ.*
+- Database: ДСРЗНАЧ, БСЧЁТ, ДМАКС, ДМИН
+
+All 885 tests pass.
+---
+ base/src/functions/mod.rs             | 506 +++++++++++++-------------
+ base/src/language/language.bin        | Bin 410 -> 593 bytes
+ base/src/language/language.json       |  30 +-
+ base/src/locale/locales.bin           | Bin 1350 -> 1890 bytes
+ base/src/locale/locales.json          | 477 +++++++++++++++++++++++-
+ webapp/IronCalc/src/i18n.ts           |   2 +
+ webapp/IronCalc/src/locale/ru_ru.json | 171 +++++++++
+ 7 files changed, 927 insertions(+), 259 deletions(-)
+ create mode 100644 webapp/IronCalc/src/locale/ru_ru.json
+
+diff --git a/base/src/functions/mod.rs b/base/src/functions/mod.rs
+index f7627227..cb3b4d1b 100644
+--- a/base/src/functions/mod.rs
++++ b/base/src/functions/mod.rs
+@@ -908,17 +908,17 @@ impl Function {
+     /// Note that in Excel some (modern) functions are prefixed by `_xlfn.`
+     pub fn get_function(name: &str) -> Option<Function> {
+         match name.to_ascii_uppercase().as_str() {
+-            "AND" => Some(Function::And),
+-            "FALSE" => Some(Function::False),
+-            "IF" => Some(Function::If),
+-            "IFERROR" => Some(Function::Iferror),
++            "AND" | "И" => Some(Function::And),
++            "FALSE" | "ЛОЖЬ" => Some(Function::False),
++            "IF" | "ЕСЛИ" => Some(Function::If),
++            "IFERROR" | "ЕСЛИОШИБКА" => Some(Function::Iferror),
+             "IFNA" | "_XLFN.IFNA" => Some(Function::Ifna),
+             "IFS" | "_XLFN.IFS" => Some(Function::Ifs),
+-            "NOT" => Some(Function::Not),
+-            "OR" => Some(Function::Or),
+-            "SWITCH" | "_XLFN.SWITCH" => Some(Function::Switch),
+-            "TRUE" => Some(Function::True),
+-            "XOR" | "_XLFN.XOR" => Some(Function::Xor),
++            "NOT" | "НЕ" => Some(Function::Not),
++            "OR" | "ИЛИ" => Some(Function::Or),
++            "SWITCH" | "_XLFN.SWITCH" | "ПЕРЕКЛЮЧ" => Some(Function::Switch),
++            "TRUE" | "ИСТИНА" => Some(Function::True),
++            "XOR" | "_XLFN.XOR" | "ИСКЛИЛИ" => Some(Function::Xor),
+             "SIN" => Some(Function::Sin),
+             "COS" => Some(Function::Cos),
+             "TAN" => Some(Function::Tan),
+@@ -939,261 +939,261 @@ impl Function {
+             "SEC" | "_XLFN.SEC" => Some(Function::Sec),
+             "SECH" | "_XLFN.SECH" => Some(Function::Sech),
+             "ACOTH" | "_XLFN.ACOTH" => Some(Function::Acoth),
+-            "FACT" => Some(Function::Fact),
+-            "FACTDOUBLE" => Some(Function::Factdouble),
+-            "EXP" => Some(Function::Exp),
+-            "SIGN" => Some(Function::Sign),
+-            "RADIANS" => Some(Function::Radians),
+-            "DEGREES" => Some(Function::Degrees),
+-            "INT" => Some(Function::Int),
+-            "EVEN" => Some(Function::Even),
+-            "ODD" => Some(Function::Odd),
+-            "CEILING" | "_XLFN.CEILING" => Some(Function::Ceiling),
+-            "CEILING.MATH" | "_XLFN.CEILING.MATH" => Some(Function::CeilingMath),
+-            "CEILING.PRECISE" | "_XLFN.CEILING.PRECISE" => Some(Function::CeilingPrecise),
+-            "FLOOR" => Some(Function::Floor),
+-            "FLOOR.MATH" | "_XLFN.FLOOR.MATH" => Some(Function::FloorMath),
+-            "FLOOR.PRECISE" | "_XLFN.FLOOR.PRECISE" => Some(Function::FloorPrecise),
+-            "ISO.CEILING" | "_XLFN.ISO.CEILING" => Some(Function::IsoCeiling),
+-            "MOD" => Some(Function::Mod),
+-            "QUOTIENT" => Some(Function::Quotient),
+-            "MROUND" => Some(Function::Mround),
+-            "TRUNC" => Some(Function::Trunc),
+-            "GCD" => Some(Function::Gcd),
+-            "LCM" => Some(Function::Lcm),
+-            "BASE" | "_XLFN.BASE" => Some(Function::Base),
+-            "DECIMAL" | "_XLFN.DECIMAL" => Some(Function::Decimal),
+-            "ROMAN" => Some(Function::Roman),
+-            "ARABIC" | "_XLFN.ARABIC" => Some(Function::Arabic),
+-            "PI" => Some(Function::Pi),
+-            "ABS" => Some(Function::Abs),
+-            "SQRT" => Some(Function::Sqrt),
+-            "SQRTPI" => Some(Function::Sqrtpi),
+-            "POWER" => Some(Function::Power),
++            "FACT" | "ФАКТР" => Some(Function::Fact),
++            "FACTDOUBLE" | "ДВФАКТР" => Some(Function::Factdouble),
++            "EXP" | "ЭКСП" => Some(Function::Exp),
++            "SIGN" | "ЗНАК" => Some(Function::Sign),
++            "RADIANS" | "РАДИАНЫ" => Some(Function::Radians),
++            "DEGREES" | "ГРАДУСЫ" => Some(Function::Degrees),
++            "INT" | "ЦЕЛОЕ" => Some(Function::Int),
++            "EVEN" | "ЧЁТН" => Some(Function::Even),
++            "ODD" | "НЕЧЁТ" => Some(Function::Odd),
++            "CEILING" | "_XLFN.CEILING" | "ОКРВВЕРХ" => Some(Function::Ceiling),
++            "CEILING.MATH" | "_XLFN.CEILING.MATH" | "ОКР.ВВЕРХ.МАТ" => Some(Function::CeilingMath),
++            "CEILING.PRECISE" | "_XLFN.CEILING.PRECISE" | "ОКР.ВВЕРХ.ТОЧН" => Some(Function::CeilingPrecise),
++            "FLOOR" | "ОКРВНИЗ" => Some(Function::Floor),
++            "FLOOR.MATH" | "_XLFN.FLOOR.MATH" | "ОКР.ВНИЗ.МАТ" => Some(Function::FloorMath),
++            "FLOOR.PRECISE" | "_XLFN.FLOOR.PRECISE" | "ОКР.ВНИЗ.ТОЧН" => Some(Function::FloorPrecise),
++            "ISO.CEILING" | "_XLFN.ISO.CEILING" | "ИСО.ОКР.ВВЕРХ" => Some(Function::IsoCeiling),
++            "MOD" | "ОСТАТ" => Some(Function::Mod),
++            "QUOTIENT" | "ЧАСТНОЕ" => Some(Function::Quotient),
++            "MROUND" | "ОКРУГЛТ" => Some(Function::Mround),
++            "TRUNC" | "ОТБР" => Some(Function::Trunc),
++            "GCD" | "НОД" => Some(Function::Gcd),
++            "LCM" | "НОК" => Some(Function::Lcm),
++            "BASE" | "_XLFN.BASE" | "ОСНОВАНИЕ" => Some(Function::Base),
++            "DECIMAL" | "_XLFN.DECIMAL" | "ДЕСЯТИЧН" => Some(Function::Decimal),
++            "ROMAN" | "РИМСКОЕ" => Some(Function::Roman),
++            "ARABIC" | "_XLFN.ARABIC" | "АРАБСКОЕ" => Some(Function::Arabic),
++            "PI" | "ПИ" => Some(Function::Pi),
++            "ABS" | "АБС" => Some(Function::Abs),
++            "SQRT" | "КОРЕНЬ" => Some(Function::Sqrt),
++            "SQRTPI" | "КОРЕНЬПИ" => Some(Function::Sqrtpi),
++            "POWER" | "СТЕПЕНЬ" => Some(Function::Power),
+             "ATAN2" => Some(Function::Atan2),
+             "LN" => Some(Function::Ln),
+             "LOG" => Some(Function::Log),
+             "LOG10" => Some(Function::Log10),
+-            "MAX" => Some(Function::Max),
+-            "MIN" => Some(Function::Min),
+-            "PRODUCT" => Some(Function::Product),
+-            "RAND" => Some(Function::Rand),
+-            "RANDBETWEEN" => Some(Function::Randbetween),
+-            "ROUND" => Some(Function::Round),
+-            "ROUNDDOWN" => Some(Function::Rounddown),
+-            "ROUNDUP" => Some(Function::Roundup),
+-            "SUM" => Some(Function::Sum),
+-            "SUMIF" => Some(Function::Sumif),
+-            "SUMIFS" => Some(Function::Sumifs),
+-            "COMBIN" => Some(Function::Combin),
+-            "COMBINA" | "_XLFN.COMBINA" => Some(Function::Combina),
+-            "SUMSQ" => Some(Function::Sumsq),
++            "MAX" | "МАКС" => Some(Function::Max),
++            "MIN" | "МИН" => Some(Function::Min),
++            "PRODUCT" | "ПРОИЗВЕД" => Some(Function::Product),
++            "RAND" | "СЛЧИС" => Some(Function::Rand),
++            "RANDBETWEEN" | "СЛЧМЕЖДУ" => Some(Function::Randbetween),
++            "ROUND" | "ОКРУГЛ" => Some(Function::Round),
++            "ROUNDDOWN" | "ОКРУГЛВНИЗ" => Some(Function::Rounddown),
++            "ROUNDUP" | "ОКРУГЛВВЕРХ" => Some(Function::Roundup),
++            "SUM" | "СУММ" => Some(Function::Sum),
++            "SUMIF" | "СУММЕСЛИ" => Some(Function::Sumif),
++            "SUMIFS" | "СУММЕСЛИМН" => Some(Function::Sumifs),
++            "COMBIN" | "ЧИСЛКОМБ" => Some(Function::Combin),
++            "COMBINA" | "_XLFN.COMBINA" | "ЧИСЛКОМБА" => Some(Function::Combina),
++            "SUMSQ" | "СУММКВ" => Some(Function::Sumsq),
+ 
+             // Lookup and Reference
+-            "CHOOSE" => Some(Function::Choose),
+-            "COLUMN" => Some(Function::Column),
+-            "COLUMNS" => Some(Function::Columns),
+-            "INDEX" => Some(Function::Index),
+-            "INDIRECT" => Some(Function::Indirect),
+-            "HLOOKUP" => Some(Function::Hlookup),
+-            "LOOKUP" => Some(Function::Lookup),
+-            "MATCH" => Some(Function::Match),
+-            "OFFSET" => Some(Function::Offset),
+-            "ROW" => Some(Function::Row),
+-            "ROWS" => Some(Function::Rows),
+-            "VLOOKUP" => Some(Function::Vlookup),
+-            "XLOOKUP" | "_XLFN.XLOOKUP" => Some(Function::Xlookup),
+-
+-            "CONCATENATE" => Some(Function::Concatenate),
+-            "EXACT" => Some(Function::Exact),
+-            "VALUE" => Some(Function::Value),
+-            "T" => Some(Function::T),
+-            "VALUETOTEXT" | "_XLFN.VALUETOTEXT" => Some(Function::Valuetotext),
+-            "CONCAT" | "_XLFN.CONCAT" => Some(Function::Concat),
+-            "FIND" => Some(Function::Find),
+-            "LEFT" => Some(Function::Left),
+-            "LEN" => Some(Function::Len),
+-            "LOWER" => Some(Function::Lower),
+-            "MID" => Some(Function::Mid),
+-            "RIGHT" => Some(Function::Right),
+-            "SEARCH" => Some(Function::Search),
+-            "TEXT" => Some(Function::Text),
+-            "TRIM" => Some(Function::Trim),
+-            "UNICODE" | "_XLFN.UNICODE" => Some(Function::Unicode),
+-            "UPPER" => Some(Function::Upper),
+-
+-            "REPT" => Some(Function::Rept),
+-            "TEXTAFTER" | "_XLFN.TEXTAFTER" => Some(Function::Textafter),
+-            "TEXTBEFORE" | "_XLFN.TEXTBEFORE" => Some(Function::Textbefore),
+-            "TEXTJOIN" | "_XLFN.TEXTJOIN" => Some(Function::Textjoin),
+-            "SUBSTITUTE" => Some(Function::Substitute),
+-
+-            "ISNUMBER" => Some(Function::Isnumber),
+-            "ISNONTEXT" => Some(Function::Isnontext),
+-            "ISTEXT" => Some(Function::Istext),
+-            "ISLOGICAL" => Some(Function::Islogical),
+-            "ISBLANK" => Some(Function::Isblank),
+-            "ISERR" => Some(Function::Iserr),
+-            "ISERROR" => Some(Function::Iserror),
+-            "ISNA" => Some(Function::Isna),
+-            "NA" => Some(Function::Na),
+-            "ISREF" => Some(Function::Isref),
+-            "ISODD" => Some(Function::Isodd),
+-            "ISEVEN" => Some(Function::Iseven),
+-            "ERROR.TYPE" => Some(Function::ErrorType),
+-            "FORMULATEXT" | "_XLFN.FORMULATEXT" => Some(Function::Formulatext),
+-            "ISFORMULA" | "_XLFN.ISFORMULA" => Some(Function::Isformula),
++            "CHOOSE" | "ВЫБОР" => Some(Function::Choose),
++            "COLUMN" | "СТОЛБЕЦ" => Some(Function::Column),
++            "COLUMNS" | "ЧИСЛСТОЛБ" => Some(Function::Columns),
++            "INDEX" | "ИНДЕКС" => Some(Function::Index),
++            "INDIRECT" | "ДВССЫЛ" => Some(Function::Indirect),
++            "HLOOKUP" | "ГПР" => Some(Function::Hlookup),
++            "LOOKUP" | "ПРОСМОТР" => Some(Function::Lookup),
++            "MATCH" | "ПОИСКПОЗ" => Some(Function::Match),
++            "OFFSET" | "СМЕЩ" => Some(Function::Offset),
++            "ROW" | "СТРОКА" => Some(Function::Row),
++            "ROWS" | "ЧСТРОК" => Some(Function::Rows),
++            "VLOOKUP" | "ВПР" => Some(Function::Vlookup),
++            "XLOOKUP" | "_XLFN.XLOOKUP" | "ПРОСМОТРХ" => Some(Function::Xlookup),
++
++            "CONCATENATE" | "СЦЕПИТЬ" => Some(Function::Concatenate),
++            "EXACT" | "СОВПАД" => Some(Function::Exact),
++            "VALUE" | "ЗНАЧЕН" => Some(Function::Value),
++            "T" | "Т" => Some(Function::T),
++            "VALUETOTEXT" | "_XLFN.VALUETOTEXT" | "ЗНАЧВТЕКСТ" => Some(Function::Valuetotext),
++            "CONCAT" | "_XLFN.CONCAT" | "СЦЕП" => Some(Function::Concat),
++            "FIND" | "НАЙТИ" => Some(Function::Find),
++            "LEFT" | "ЛЕВСИМВ" => Some(Function::Left),
++            "LEN" | "ДЛСТР" => Some(Function::Len),
++            "LOWER" | "СТРОЧН" => Some(Function::Lower),
++            "MID" | "ПСТР" => Some(Function::Mid),
++            "RIGHT" | "ПРАВСИМВ" => Some(Function::Right),
++            "SEARCH" | "ПОИСК" => Some(Function::Search),
++            "TEXT" | "ТЕКСТ" => Some(Function::Text),
++            "TRIM" | "СЖПРОБЕЛЫ" => Some(Function::Trim),
++            "UNICODE" | "_XLFN.UNICODE" | "ЮНИКОД" => Some(Function::Unicode),
++            "UPPER" | "ПРОПИСН" => Some(Function::Upper),
++
++            "REPT" | "ПОВТОР" => Some(Function::Rept),
++            "TEXTAFTER" | "_XLFN.TEXTAFTER" | "ТЕКСТПОСЛЕ" => Some(Function::Textafter),
++            "TEXTBEFORE" | "_XLFN.TEXTBEFORE" | "ТЕКСТПЕРЕД" => Some(Function::Textbefore),
++            "TEXTJOIN" | "_XLFN.TEXTJOIN" | "ОБЪЕДИНИТЬ" => Some(Function::Textjoin),
++            "SUBSTITUTE" | "ПОДСТАВИТЬ" => Some(Function::Substitute),
++
++            "ISNUMBER" | "ЕЧИСЛО" => Some(Function::Isnumber),
++            "ISNONTEXT" | "ЕНЕТЕКСТ" => Some(Function::Isnontext),
++            "ISTEXT" | "ЕТЕКСТ" => Some(Function::Istext),
++            "ISLOGICAL" | "ЕЛОГ" => Some(Function::Islogical),
++            "ISBLANK" | "ЕПУСТО" => Some(Function::Isblank),
++            "ISERR" | "ЕОШ" => Some(Function::Iserr),
++            "ISERROR" | "ЕОШИБКА" => Some(Function::Iserror),
++            "ISNA" | "ЕНД" => Some(Function::Isna),
++            "NA" | "НД" => Some(Function::Na),
++            "ISREF" | "ЕССЫЛКА" => Some(Function::Isref),
++            "ISODD" | "ЕНЕЧЕТ" => Some(Function::Isodd),
++            "ISEVEN" | "ЕЧЕТ" => Some(Function::Iseven),
++            "ERROR.TYPE" | "ТИП.ОШИБКИ" => Some(Function::ErrorType),
++            "FORMULATEXT" | "_XLFN.FORMULATEXT" | "ФОРМУЛАТЕКСТ" => Some(Function::Formulatext),
++            "ISFORMULA" | "_XLFN.ISFORMULA" | "ЕФОРМУЛА" => Some(Function::Isformula),
+             "TYPE" => Some(Function::Type),
+             "SHEET" | "_XLFN.SHEET" => Some(Function::Sheet),
+ 
+-            "AVERAGE" => Some(Function::Average),
+-            "AVERAGEA" => Some(Function::Averagea),
+-            "AVEDEV" => Some(Function::Avedev),
+-            "AVERAGEIF" => Some(Function::Averageif),
+-            "AVERAGEIFS" => Some(Function::Averageifs),
+-            "COUNT" => Some(Function::Count),
+-            "COUNTA" => Some(Function::Counta),
+-            "COUNTBLANK" => Some(Function::Countblank),
+-            "COUNTIF" => Some(Function::Countif),
+-            "COUNTIFS" => Some(Function::Countifs),
+-            "MAXIFS" | "_XLFN.MAXIFS" => Some(Function::Maxifs),
+-            "MINIFS" | "_XLFN.MINIFS" => Some(Function::Minifs),
+-            "GEOMEAN" => Some(Function::Geomean),
++            "AVERAGE" | "СРЗНАЧ" => Some(Function::Average),
++            "AVERAGEA" | "СРЗНАЧА" => Some(Function::Averagea),
++            "AVEDEV" | "СРОТКЛ" => Some(Function::Avedev),
++            "AVERAGEIF" | "СРЗНАЧЕСЛИ" => Some(Function::Averageif),
++            "AVERAGEIFS" | "СРЗНАЧЕСЛИМН" => Some(Function::Averageifs),
++            "COUNT" | "СЧЁТ" => Some(Function::Count),
++            "COUNTA" | "СЧЁТЗ" => Some(Function::Counta),
++            "COUNTBLANK" | "СЧИТАТЬПУСТОТЫ" => Some(Function::Countblank),
++            "COUNTIF" | "СЧЁТЕСЛИ" => Some(Function::Countif),
++            "COUNTIFS" | "СЧЁТЕСЛИМН" => Some(Function::Countifs),
++            "MAXIFS" | "_XLFN.MAXIFS" | "МАКСЕСЛИМН" => Some(Function::Maxifs),
++            "MINIFS" | "_XLFN.MINIFS" | "МИНЕСЛИМН" => Some(Function::Minifs),
++            "GEOMEAN" | "СРГЕОМ" => Some(Function::Geomean),
+             // Date and Time
+-            "YEAR" => Some(Function::Year),
+-            "DAY" => Some(Function::Day),
+-            "EOMONTH" => Some(Function::Eomonth),
+-            "MONTH" => Some(Function::Month),
+-            "DATE" => Some(Function::Date),
+-            "DATEDIF" => Some(Function::Datedif),
+-            "DATEVALUE" => Some(Function::Datevalue),
+-            "EDATE" => Some(Function::Edate),
+-            "NETWORKDAYS" => Some(Function::Networkdays),
+-            "NETWORKDAYS.INTL" => Some(Function::NetworkdaysIntl),
+-            "TIME" => Some(Function::Time),
+-            "TIMEVALUE" => Some(Function::Timevalue),
+-            "HOUR" => Some(Function::Hour),
+-            "MINUTE" => Some(Function::Minute),
+-            "SECOND" => Some(Function::Second),
+-            "TODAY" => Some(Function::Today),
+-            "NOW" => Some(Function::Now),
+-            "DAYS" | "_XLFN.DAYS" => Some(Function::Days),
+-            "DAYS360" => Some(Function::Days360),
+-            "WEEKDAY" => Some(Function::Weekday),
+-            "WEEKNUM" => Some(Function::Weeknum),
+-            "WORKDAY" => Some(Function::Workday),
+-            "WORKDAY.INTL" => Some(Function::WorkdayIntl),
+-            "YEARFRAC" => Some(Function::Yearfrac),
+-            "ISOWEEKNUM" | "_XLFN.ISOWEEKNUM" => Some(Function::Isoweeknum),
++            "YEAR" | "ГОД" => Some(Function::Year),
++            "DAY" | "ДЕНЬ" => Some(Function::Day),
++            "EOMONTH" | "КОНМЕСЯЦА" => Some(Function::Eomonth),
++            "MONTH" | "МЕСЯЦ" => Some(Function::Month),
++            "DATE" | "ДАТА" => Some(Function::Date),
++            "DATEDIF" | "РАЗНДАТ" => Some(Function::Datedif),
++            "DATEVALUE" | "ДАТАЗНАЧ" => Some(Function::Datevalue),
++            "EDATE" | "ДАТАМЕС" => Some(Function::Edate),
++            "NETWORKDAYS" | "ЧИСТРАБДНИ" => Some(Function::Networkdays),
++            "NETWORKDAYS.INTL" | "ЧИСТРАБДНИ.МЕЖД" => Some(Function::NetworkdaysIntl),
++            "TIME" | "ВРЕМЯ" => Some(Function::Time),
++            "TIMEVALUE" | "ВРЕМЗНАЧ" => Some(Function::Timevalue),
++            "HOUR" | "ЧАС" => Some(Function::Hour),
++            "MINUTE" | "МИНУТА" => Some(Function::Minute),
++            "SECOND" | "СЕКУНДА" => Some(Function::Second),
++            "TODAY" | "СЕГОДНЯ" => Some(Function::Today),
++            "NOW" | "ТДАТА" => Some(Function::Now),
++            "DAYS" | "_XLFN.DAYS" | "ДНИ" => Some(Function::Days),
++            "DAYS360" | "ДНЕЙ360" => Some(Function::Days360),
++            "WEEKDAY" | "ДЕНЬНЕД" => Some(Function::Weekday),
++            "WEEKNUM" | "НОМНЕДЕЛИ" => Some(Function::Weeknum),
++            "WORKDAY" | "РАБДЕНЬ" => Some(Function::Workday),
++            "WORKDAY.INTL" | "РАБДЕНЬ.МЕЖД" => Some(Function::WorkdayIntl),
++            "YEARFRAC" | "ДОЛЯГОДА" => Some(Function::Yearfrac),
++            "ISOWEEKNUM" | "_XLFN.ISOWEEKNUM" | "НОМНЕДЕЛИИСО" => Some(Function::Isoweeknum),
+             // Financial
+-            "PMT" => Some(Function::Pmt),
+-            "PV" => Some(Function::Pv),
+-            "RATE" => Some(Function::Rate),
+-            "NPER" => Some(Function::Nper),
+-            "FV" => Some(Function::Fv),
+-            "PPMT" => Some(Function::Ppmt),
+-            "IPMT" => Some(Function::Ipmt),
+-            "NPV" => Some(Function::Npv),
+-            "XNPV" => Some(Function::Xnpv),
+-            "MIRR" => Some(Function::Mirr),
+-            "IRR" => Some(Function::Irr),
+-            "XIRR" => Some(Function::Xirr),
+-            "ISPMT" => Some(Function::Ispmt),
+-            "RRI" | "_XLFN.RRI" => Some(Function::Rri),
+-
+-            "SLN" => Some(Function::Sln),
+-            "SYD" => Some(Function::Syd),
+-            "NOMINAL" => Some(Function::Nominal),
+-            "EFFECT" => Some(Function::Effect),
+-            "PDURATION" | "_XLFN.PDURATION" => Some(Function::Pduration),
+-
+-            "TBILLYIELD" => Some(Function::Tbillyield),
+-            "TBILLPRICE" => Some(Function::Tbillprice),
+-            "TBILLEQ" => Some(Function::Tbilleq),
+-
+-            "DOLLARDE" => Some(Function::Dollarde),
+-            "DOLLARFR" => Some(Function::Dollarfr),
+-
+-            "DDB" => Some(Function::Ddb),
+-            "DB" => Some(Function::Db),
+-
+-            "CUMPRINC" => Some(Function::Cumprinc),
+-            "CUMIPMT" => Some(Function::Cumipmt),
+-
+-            "BESSELI" => Some(Function::Besseli),
+-            "BESSELJ" => Some(Function::Besselj),
+-            "BESSELK" => Some(Function::Besselk),
+-            "BESSELY" => Some(Function::Bessely),
+-            "ERF" => Some(Function::Erf),
+-            "ERF.PRECISE" | "_XLFN.ERF.PRECISE" => Some(Function::ErfPrecise),
+-            "ERFC" => Some(Function::Erfc),
+-            "ERFC.PRECISE" | "_XLFN.ERFC.PRECISE" => Some(Function::ErfcPrecise),
+-            "BIN2DEC" => Some(Function::Bin2dec),
+-            "BIN2HEX" => Some(Function::Bin2hex),
+-            "BIN2OCT" => Some(Function::Bin2oct),
+-            "DEC2BIN" => Some(Function::Dec2Bin),
+-            "DEC2HEX" => Some(Function::Dec2hex),
+-            "DEC2OCT" => Some(Function::Dec2oct),
+-            "HEX2BIN" => Some(Function::Hex2bin),
+-            "HEX2DEC" => Some(Function::Hex2dec),
+-            "HEX2OCT" => Some(Function::Hex2oct),
+-            "OCT2BIN" => Some(Function::Oct2bin),
+-            "OCT2DEC" => Some(Function::Oct2dec),
+-            "OCT2HEX" => Some(Function::Oct2hex),
+-            "BITAND" | "_XLFN.BITAND" => Some(Function::Bitand),
+-            "BITLSHIFT" | "_XLFN.BITLSHIFT" => Some(Function::Bitlshift),
+-            "BITOR" | "_XLFN.BITOR" => Some(Function::Bitor),
+-            "BITRSHIFT" | "_XLFN.BITRSHIFT" => Some(Function::Bitrshift),
+-            "BITXOR" | "_XLFN.BITXOR" => Some(Function::Bitxor),
+-            "COMPLEX" => Some(Function::Complex),
+-            "IMABS" => Some(Function::Imabs),
+-            "IMAGINARY" => Some(Function::Imaginary),
+-            "IMARGUMENT" => Some(Function::Imargument),
+-            "IMCONJUGATE" => Some(Function::Imconjugate),
+-            "IMCOS" => Some(Function::Imcos),
+-            "IMCOSH" | "_XLFN.IMCOSH" => Some(Function::Imcosh),
+-            "IMCOT" | "_XLFN.IMCOT" => Some(Function::Imcot),
+-            "IMCSC" | "_XLFN.IMCSC" => Some(Function::Imcsc),
+-            "IMCSCH" | "_XLFN.IMCSCH" => Some(Function::Imcsch),
+-            "IMDIV" => Some(Function::Imdiv),
+-            "IMEXP" => Some(Function::Imexp),
+-            "IMLN" => Some(Function::Imln),
+-            "IMLOG10" => Some(Function::Imlog10),
+-            "IMLOG2" => Some(Function::Imlog2),
+-            "IMPOWER" => Some(Function::Impower),
+-            "IMPRODUCT" => Some(Function::Improduct),
+-            "IMREAL" => Some(Function::Imreal),
+-            "IMSEC" | "_XLFN.IMSEC" => Some(Function::Imsec),
+-            "IMSECH" | "_XLFN.IMSECH" => Some(Function::Imsech),
+-            "IMSIN" => Some(Function::Imsin),
+-            "IMSINH" | "_XLFN.IMSINH" => Some(Function::Imsinh),
+-            "IMSQRT" => Some(Function::Imsqrt),
+-            "IMSUB" => Some(Function::Imsub),
+-            "IMSUM" => Some(Function::Imsum),
+-            "IMTAN" | "_XLFN.IMTAN" => Some(Function::Imtan),
+-            "CONVERT" => Some(Function::Convert),
+-            "DELTA" => Some(Function::Delta),
+-            "GESTEP" => Some(Function::Gestep),
+-
+-            "SUBTOTAL" => Some(Function::Subtotal),
+-
+-            "N" => Some(Function::N),
+-            "CELL" => Some(Function::Cell),
+-            "INFO" => Some(Function::Info),
+-            "SHEETS" | "_XLFN.SHEETS" => Some(Function::Sheets),
+-
+-            "DAVERAGE" => Some(Function::Daverage),
+-            "DCOUNT" => Some(Function::Dcount),
+-            "DGET" => Some(Function::Dget),
+-            "DMAX" => Some(Function::Dmax),
+-            "DMIN" => Some(Function::Dmin),
+-            "DSUM" => Some(Function::Dsum),
+-            "DCOUNTA" => Some(Function::Dcounta),
+-            "DPRODUCT" => Some(Function::Dproduct),
+-            "DSTDEV" => Some(Function::Dstdev),
+-            "DVAR" => Some(Function::Dvar),
+-            "DVARP" => Some(Function::Dvarp),
+-            "DSTDEVP" => Some(Function::Dstdevp),
++            "PMT" | "ПЛТ" => Some(Function::Pmt),
++            "PV" | "ПС" => Some(Function::Pv),
++            "RATE" | "СТАВКА" => Some(Function::Rate),
++            "NPER" | "КПЕР" => Some(Function::Nper),
++            "FV" | "БС" => Some(Function::Fv),
++            "PPMT" | "ОСПЛТ" => Some(Function::Ppmt),
++            "IPMT" | "ПРПЛТ" => Some(Function::Ipmt),
++            "NPV" | "ЧПС" => Some(Function::Npv),
++            "XNPV" | "ЧИСТНПС" => Some(Function::Xnpv),
++            "MIRR" | "МВСД" => Some(Function::Mirr),
++            "IRR" | "ВСД" => Some(Function::Irr),
++            "XIRR" | "ЧИСТВНДОХ" => Some(Function::Xirr),
++            "ISPMT" | "ПРОЦПЛАТ" => Some(Function::Ispmt),
++            "RRI" | "_XLFN.RRI" | "ЭКВИВСТ" => Some(Function::Rri),
++
++            "SLN" | "АПЛ" => Some(Function::Sln),
++            "SYD" | "АСЧ" => Some(Function::Syd),
++            "NOMINAL" | "НОМИНАЛ" => Some(Function::Nominal),
++            "EFFECT" | "ЭФФЕКТ" => Some(Function::Effect),
++            "PDURATION" | "_XLFN.PDURATION" | "ПДЛИТ" => Some(Function::Pduration),
++
++            "TBILLYIELD" | "ДОХОДКЧЕК" => Some(Function::Tbillyield),
++            "TBILLPRICE" | "ЦЕНАКЧЕК" => Some(Function::Tbillprice),
++            "TBILLEQ" | "РАВНОКЧЕК" => Some(Function::Tbilleq),
++
++            "DOLLARDE" | "РУБ.ДЕС" => Some(Function::Dollarde),
++            "DOLLARFR" | "РУБ.ДРОБЬ" => Some(Function::Dollarfr),
++
++            "DDB" | "ДДОБ" => Some(Function::Ddb),
++            "DB" | "ФУО" => Some(Function::Db),
++
++            "CUMPRINC" | "ОБЩДОХОД" => Some(Function::Cumprinc),
++            "CUMIPMT" | "ОБЩПЛАТ" => Some(Function::Cumipmt),
++
++            "BESSELI" | "БЕССЕЛЬI" => Some(Function::Besseli),
++            "BESSELJ" | "БЕССЕЛЬJ" => Some(Function::Besselj),
++            "BESSELK" | "БЕССЕЛЬK" => Some(Function::Besselk),
++            "BESSELY" | "БЕССЕЛЬY" => Some(Function::Bessely),
++            "ERF" | "ФОШ" => Some(Function::Erf),
++            "ERF.PRECISE" | "_XLFN.ERF.PRECISE" | "ФОШ.ТОЧН" => Some(Function::ErfPrecise),
++            "ERFC" | "ФОШК" => Some(Function::Erfc),
++            "ERFC.PRECISE" | "_XLFN.ERFC.PRECISE" | "ФОШК.ТОЧН" => Some(Function::ErfcPrecise),
++            "BIN2DEC" | "БИН.В.ДЕС" => Some(Function::Bin2dec),
++            "BIN2HEX" | "БИН.В.ШЕСТН" => Some(Function::Bin2hex),
++            "BIN2OCT" | "БИН.В.ВОСЬМ" => Some(Function::Bin2oct),
++            "DEC2BIN" | "ДЕС.В.ДВ" => Some(Function::Dec2Bin),
++            "DEC2HEX" | "ДЕС.В.ШЕСТН" => Some(Function::Dec2hex),
++            "DEC2OCT" | "ДЕС.В.ВОСЬМ" => Some(Function::Dec2oct),
++            "HEX2BIN" | "ШЕСТН.В.ДВ" => Some(Function::Hex2bin),
++            "HEX2DEC" | "ШЕСТН.В.ДЕС" => Some(Function::Hex2dec),
++            "HEX2OCT" | "ШЕСТН.В.ВОСЬМ" => Some(Function::Hex2oct),
++            "OCT2BIN" | "ВОСЬМ.В.ДВ" => Some(Function::Oct2bin),
++            "OCT2DEC" | "ВОСЬМ.В.ДЕС" => Some(Function::Oct2dec),
++            "OCT2HEX" | "ВОСЬМ.В.ШЕСТН" => Some(Function::Oct2hex),
++            "BITAND" | "_XLFN.BITAND" | "БИТ.И" => Some(Function::Bitand),
++            "BITLSHIFT" | "_XLFN.BITLSHIFT" | "БИТ.СДВИГЛ" => Some(Function::Bitlshift),
++            "BITOR" | "_XLFN.BITOR" | "БИТ.ИЛИ" => Some(Function::Bitor),
++            "BITRSHIFT" | "_XLFN.BITRSHIFT" | "БИТ.СДВИГП" => Some(Function::Bitrshift),
++            "BITXOR" | "_XLFN.BITXOR" | "БИТ.ИСКЛИЛИ" => Some(Function::Bitxor),
++            "COMPLEX" | "КОМПЛЕКСН" => Some(Function::Complex),
++            "IMABS" | "МНИМ.МОДУЛЬ" => Some(Function::Imabs),
++            "IMAGINARY" | "МНИМ.ЧАСТЬ" => Some(Function::Imaginary),
++            "IMARGUMENT" | "МНИМ.АРГУМЕНТ" => Some(Function::Imargument),
++            "IMCONJUGATE" | "МНИМ.СОПРЯЖ" => Some(Function::Imconjugate),
++            "IMCOS" | "МНИМ.COS" => Some(Function::Imcos),
++            "IMCOSH" | "_XLFN.IMCOSH" | "МНИМ.COSH" => Some(Function::Imcosh),
++            "IMCOT" | "_XLFN.IMCOT" | "МНИМ.COT" => Some(Function::Imcot),
++            "IMCSC" | "_XLFN.IMCSC" | "МНИМ.CSC" => Some(Function::Imcsc),
++            "IMCSCH" | "_XLFN.IMCSCH" | "МНИМ.CSCH" => Some(Function::Imcsch),
++            "IMDIV" | "МНИМ.ДЕЛ" => Some(Function::Imdiv),
++            "IMEXP" | "МНИМ.EXP" => Some(Function::Imexp),
++            "IMLN" | "МНИМ.LN" => Some(Function::Imln),
++            "IMLOG10" | "МНИМ.LOG10" => Some(Function::Imlog10),
++            "IMLOG2" | "МНИМ.LOG2" => Some(Function::Imlog2),
++            "IMPOWER" | "МНИМ.СТЕПЕНЬ" => Some(Function::Impower),
++            "IMPRODUCT" | "МНИМ.ПРОИЗВ" => Some(Function::Improduct),
++            "IMREAL" | "МНИМ.ВЕЩ" => Some(Function::Imreal),
++            "IMSEC" | "_XLFN.IMSEC" | "МНИМ.SEC" => Some(Function::Imsec),
++            "IMSECH" | "_XLFN.IMSECH" | "МНИМ.SECH" => Some(Function::Imsech),
++            "IMSIN" | "МНИМ.SIN" => Some(Function::Imsin),
++            "IMSINH" | "_XLFN.IMSINH" | "МНИМ.SINH" => Some(Function::Imsinh),
++            "IMSQRT" | "МНИМ.КОРЕНЬ" => Some(Function::Imsqrt),
++            "IMSUB" | "МНИМ.РАЗН" => Some(Function::Imsub),
++            "IMSUM" | "МНИМ.СУММ" => Some(Function::Imsum),
++            "IMTAN" | "_XLFN.IMTAN" | "МНИМ.TAN" => Some(Function::Imtan),
++            "CONVERT" | "ПРЕОБР" => Some(Function::Convert),
++            "DELTA" | "ДЕЛЬТА" => Some(Function::Delta),
++            "GESTEP" | "ПОРОГ" => Some(Function::Gestep),
++
++            "SUBTOTAL" | "ПРОМЕЖУТОЧНЫЕ.ИТОГИ" => Some(Function::Subtotal),
++
++            "N" | "ЧИСЛ" => Some(Function::N),
++            "CELL" | "ЯЧЕЙКА" => Some(Function::Cell),
++            "INFO" | "ИНФО" => Some(Function::Info),
++            "SHEETS" | "_XLFN.SHEETS" | "ЛИСТЫ" => Some(Function::Sheets),
++
++            "DAVERAGE" | "ДСРЗНАЧ" => Some(Function::Daverage),
++            "DCOUNT" | "БСЧЁТ" => Some(Function::Dcount),
++            "DGET" | "ДИЗВЛЕЧЬ" => Some(Function::Dget),
++            "DMAX" | "ДМАКС" => Some(Function::Dmax),
++            "DMIN" | "ДМИН" => Some(Function::Dmin),
++            "DSUM" | "ДСУММ" => Some(Function::Dsum),
++            "DCOUNTA" | "БСЧЁТА" => Some(Function::Dcounta),
++            "DPRODUCT" | "ДПРОИЗВЕД" => Some(Function::Dproduct),
++            "DSTDEV" | "ДСТАНДОТКЛ" => Some(Function::Dstdev),
++            "DVAR" | "ДДИСП" => Some(Function::Dvar),
++            "DVARP" | "ДДИСПР" => Some(Function::Dvarp),
++            "DSTDEVP" | "ДСТАНДОТКЛП" => Some(Function::Dstdevp),
+ 
+             "BETA.DIST" | "_XLFN.BETA.DIST" => Some(Function::BetaDist),
+             "BETA.INV" | "_XLFN.BETA.INV" => Some(Function::BetaInv),
+diff --git a/base/src/language/language.bin b/base/src/language/language.bin
+index 2838eb30d0b3c9c8df9494ee6ec3242cc639214f..5e373ec575749e0e091c95d955b54178e4dcf870 100644
+GIT binary patch
+literal 593
+zcmZ`%-AV#M6qc!6p__VyVIE+60~y`fT$tUJ(OpHNtCWcF!jQs?p25UY{B4UeDCiM_
+z?FG)W^aP#Rgi>r^zVDpb@BGY}-N}5l+Vy6mRlhi?6WQN}Aw=+iIE8Lm1tL`335Bw_
+zC6r&`1x2dmG>l;eckpI&SrRr6s@m{1<O}4uZ7|Fc!7Iu}(4|ZXdkJxr*f~)P4k<Z(
+zN;9l9f%h!)xGNBSH_PG=q@2>OJ|vwX$_Bb2SWp&n8Hj{LpeTzYJn+$|2vw$}Gr;0~
+zxP`HKK$+!)e<+Std}3Q$45lXZnP>9f9g?FfEVxJ}ffuFB3tWVxCtWacYrG(7YCnT3
+zNpg=hyLjOt3{Y!2Zc+ZrsXfCmb{WhuM#t%>9%ZGXBQa=|J|{V$BoAy#nhk8Lhhtr~
+zMp>TA{01avTKSAwM=-|kj?$`iB-fWXs~NnY?&jyAgi?Bxn~0q2oO5_gevf1*x>+w+
+F!*4pv()|Dc
+
+literal 410
+zcmZ{fOHRW;42C5u3$8Kp0m=<3Cvixm$wO{tT6Imb>;j}tB`%NyAlR_!hHD^&i!mm!
+zX<^~-mw&(H<fa=RhQs|ZJVO5Lg{od0Z>bc|l2gvoLhlQ5yMpY76<Mil!37j9%z~8n
+z?#|$RRttuAY}$H_4b}Y1`6F7X@ET4p=*hAZqw3h;mZjI>n6_ddykcJY)vdXZ`MlW4
+zlwh->CA<pkj(Rb!H`ut^;GRmW8#RGxiak}`Mdu%d@PwPLva#bwKHpLnOD;aRI53Ww
+ck<H9Cze|;9>5>ovvPk^uPtnQ7>DeoO0YA-d2><{9
+
+diff --git a/base/src/language/language.json b/base/src/language/language.json
+index 7e173a0d..5eedd10b 100644
+--- a/base/src/language/language.json
++++ b/base/src/language/language.json
+@@ -4,7 +4,7 @@
+             "true": "TRUE",
+             "false": "FALSE"
+         },
+-        "errors":{
++        "errors": {
+             "ref": "#REF!",
+             "name": "#NAME?",
+             "value": "#VALUE!",
+@@ -24,7 +24,7 @@
+             "true": "WAHR",
+             "false": "FALSCH"
+         },
+-        "errors":{
++        "errors": {
+             "ref": "#BEZUG!",
+             "name": "#NAME?",
+             "value": "#WERT!",
+@@ -37,14 +37,14 @@
+             "null": "#NULL!",
+             "calc": "#CALC!",
+             "circ": "#CIRC!"
+-          }
++        }
+     },
+     "fr": {
+         "booleans": {
+             "true": "VRAI",
+             "false": "FAUX"
+         },
+-        "errors":{
++        "errors": {
+             "ref": "#REF!",
+             "name": "#NOM?",
+             "value": "#VALEUR!",
+@@ -78,5 +78,25 @@
+             "calc": "#CALC!",
+             "circ": "#CIRC!"
+         }
++    },
++    "ru": {
++        "booleans": {
++            "true": "ИСТИНА",
++            "false": "ЛОЖЬ"
++        },
++        "errors": {
++            "ref": "#ССЫЛКА!",
++            "name": "#ИМЯ?",
++            "value": "#ЗНАЧ!",
++            "div": "#ДЕЛ/0!",
++            "na": "#Н/Д",
++            "num": "#ЧИСЛО!",
++            "error": "#ОШИБКА!",
++            "nimpl": "#Н/РЕАЛИЗ!",
++            "spill": "#ПЕРЕЛИВ!",
++            "null": "#ПУСТО!",
++            "calc": "#ВЫЧИСЛ!",
++            "circ": "#ЦИКЛ!"
++        }
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/base/src/locale/locales.bin b/base/src/locale/locales.bin
+index b0b9e42c5ca3038292c4a0f03d532b66fb27b0b8..472ce11e9c43a94c124bebc3b8d026fc44037f0e 100644
+GIT binary patch
+literal 1890
+zcmb_cT~8ZF6g8$<n{|b%M#{&N-9V*8bw;%0DLh1w#gQy6NZrsrRn=loU{iZ1+7F0%
+zK!#Kam7*pOjnYVMq)5C}eW)Qt4W<SOUh^>f7x)EL`vcN*cfGJg`Kr{ryL0c{xidcZ
+zoPlHSeNm`#$LB7$xqbf1SbBawlgcRBteVN3IMJ{6_xERxDXNmmC`zU;t7N;*5Vq}^
+zGrFKrv$*Zj%<{Z>QJK}S$Q{a*9B#oGW}RkoU2X?UvK=(#2K<KX1a~p+$Zgqy{~g~J
+zG9CF$w&i-TjOu1I3zldPDq6uE>|Mr58^}DBJHb87up_vQwWZ*eT*I@CT&pVTmOUeC
+zzRlgb>3A5ey<eP)sB!nY&*!*1XK@FM?%tDWvnmYVu9^*Wgz+jEf%}qIu}<?@-yvUe
+zER2Tf`40L2yo2cN>up~8FqJX{(*@Hkrdv!CtmH7mWaxScd~~RL>N&WBPIf4kYv>2P
+zpc86?8n8Ga2MAyWV1NZoAOyTuCezQKzu(h)`OF8OmZmlz7!Nv|V`o14?8>#PVI~^O
+zrtO<fiBCIl`rfLuFnYtWYPxBaeH&lR8ue#<*E9GHkJqQUGx?1t;3mXeIMw(<=!1LI
+z1SDw&cY|*s-8$rIh4TIxW+4z7BT-3m<m4tq{64%A<SE<22~UGtAc6>>>#~e<*XT@K
+znRa5<f#mTDU86SkhIP2sj<|+);6UAiFsIQ@-E4^K=m$g166TC>J>jAw3)melDxME#
+z3ouOcs#S@Ch@3{3orZ2YmDw&m4ba0uPvd2JDlgGf3F-O&P9jm$+W2K{Tzh!)_RU6P
+z7<Pe%u3Z?$k1=3ov7GFvnvAq$(2+qz1_4<l9*cEjBo9dMN)}FErxuHaVv#}&*C3RJ
+zg@4{{20<VPq<|2R0V+TPQUD-8JV*!KKn%d(7wqaLaSLj}ERarCJiyfWn`*p+B4Ven
+zC-v8h6j`~XkLu;}s4+RA$=~Fv{7K%&_amPB@`-#bf0jRtCu)-Q$ym)7i$%uNJS(tb
+zQO%E#sriq|)chx8YW_T#@^#PtcPn@o7Z=t1I9c}Z-9PpoMvwBMcfZ+6zLZ&coP5*&
+z4EIi$6X0>9fPa3^K=78_MkadI{6(_#qep!M#esn#HUN8vAiedg8r2OA6?Ru&9UkTn
+zqf@!u?rI^fPlV}}m28}Tn@{C(xsxa3s(1MPk+X*g&K-tF(x*<JPQan11DM!y5FcGg
+qWwY7i$73X~^CM^Dm2+{BNI|qIL;HMc3}f^vU-b;`FLwq92mb{UXa{%z
+
+delta 601
+zcmaFFcZ^Gph2;=aYF<ieYM!pUQ))3&c{wwyzm@Sxqq(JO!Az6w7>y=cnu4i22K7K$
+zPG$xM2F~EpJm37hkkZuf)Rd5nQn#Ya;KY*Pd_CWMJ(o;9-%LH1d_A`!z2HPWtSVFT
+zb8|}baubVkGY_xKDoriROf5dVFp25R8K(A7=akBhGB62YmxhL<R?YNE%qyL2#OyO!
+zoXKgj9<$fvhfKcwKn?6b_Z%zJWZ+~7WSG30MViw;xx_EO%q2B>@>6C*por?^A{JFH
+zph~X)U@%#ZRbsLhD^I<vo3Ep<mzQI(zn=>izn+es4i`U=(BtB_1_CaARUqKv*9HPE
+zeqA77i>-Uq*-=-=#qSCP907-?AKHF+`r+wp{~tAMfFmHUV;&r_{r5}sgCj0}D<EK+
+zIa66jS$XnfR`JRASvh@~PMtcm1SDdhXJ7!M4=p&f1iL6J4-Zgk0bC&xo2jE?asZnG
+zD}y+XIM3wyY~oySRSPE1Ws~$ma1SkEm6k>}$65oKr-{r#lVT9&5ayVyz%C8KB5eOd
+MgI(Z=i(dr@0QVHgW&i*H
+
+diff --git a/base/src/locale/locales.json b/base/src/locale/locales.json
+index 8a53ae23..69477e74 100644
+--- a/base/src/locale/locales.json
++++ b/base/src/locale/locales.json
+@@ -1 +1,476 @@
+-{"en":{"dates":{"day_names":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"day_names_short":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"months":["January","February","March","April","May","June","July","August","September","October","November","December"],"months_short":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"months_letter":["J","F","M","A","M","J","J","A","S","O","N","D"]},"numbers":{"symbols-numberSystem-latn":{"decimal":".","group":",","list":";","percentSign":"%","plusSign":"+","minusSign":"-","approximatelySign":"~","exponential":"E","superscriptingExponent":"×","perMille":"‰","infinity":"∞","nan":"NaN","timeSeparator":":"},"decimalFormats-numberSystem-latn":{"standard":"#,##0.###"},"currencyFormats-numberSystem-latn":{"standard":"¤#,##0.00","standard-alphaNextToNumber":"¤ #,##0.00","standard-noCurrency":"#,##0.00","accounting":"¤#,##0.00;(¤#,##0.00)","accounting-alphaNextToNumber":"¤ #,##0.00;(¤ #,##0.00)","accounting-noCurrency":"#,##0.00;(#,##0.00)"}},"currency":{"iso":"USD","symbol":"$"}},"en-GB":{"dates":{"day_names":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"day_names_short":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"months":["January","February","March","April","May","June","July","August","September","October","November","December"],"months_short":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sept","Oct","Nov","Dec"],"months_letter":["J","F","M","A","M","J","J","A","S","O","N","D"]},"numbers":{"symbols-numberSystem-latn":{"decimal":".","group":",","list":";","percentSign":"%","plusSign":"+","minusSign":"-","approximatelySign":"~","exponential":"E","superscriptingExponent":"×","perMille":"‰","infinity":"∞","nan":"NaN","timeSeparator":":"},"decimalFormats-numberSystem-latn":{"standard":"#,##0.###"},"currencyFormats-numberSystem-latn":{"standard":"¤#,##0.00","standard-alphaNextToNumber":"¤ #,##0.00","standard-noCurrency":"#,##0.00","accounting":"¤#,##0.00;(¤#,##0.00)","accounting-alphaNextToNumber":"¤ #,##0.00;(¤ #,##0.00)","accounting-noCurrency":"#,##0.00;(#,##0.00)"}},"currency":{"iso":"USD","symbol":"$"}},"es":{"dates":{"day_names":["domingo","lunes","martes","miércoles","jueves","viernes","sábado"],"day_names_short":["dom","lun","mar","mié","jue","vie","sáb"],"months":["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"],"months_short":["ene","feb","mar","abr","may","jun","jul","ago","sept","oct","nov","dic"],"months_letter":["E","F","M","A","M","J","J","A","S","O","N","D"]},"numbers":{"symbols-numberSystem-latn":{"decimal":",","group":".","list":";","percentSign":"%","plusSign":"+","minusSign":"-","approximatelySign":"~","exponential":"E","superscriptingExponent":"×","perMille":"‰","infinity":"∞","nan":"NaN","timeSeparator":":"},"decimalFormats-numberSystem-latn":{"standard":"#,##0.###"},"currencyFormats-numberSystem-latn":{"standard":"#,##0.00 ¤","standard-noCurrency":"#,##0.00","accounting":"#,##0.00 ¤","accounting-noCurrency":"#,##0.00"}},"currency":{"iso":"USD","symbol":"$"}},"de":{"dates":{"day_names":["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"],"day_names_short":["So.","Mo.","Di.","Mi.","Do.","Fr.","Sa."],"months":["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],"months_short":["Jan.","Feb.","März","Apr.","Mai","Juni","Juli","Aug.","Sept.","Okt.","Nov.","Dez."],"months_letter":["J","F","M","A","M","J","J","A","S","O","N","D"]},"numbers":{"symbols-numberSystem-latn":{"decimal":",","group":".","list":";","percentSign":"%","plusSign":"+","minusSign":"-","approximatelySign":"≈","exponential":"E","superscriptingExponent":"·","perMille":"‰","infinity":"∞","nan":"NaN","timeSeparator":":"},"decimalFormats-numberSystem-latn":{"standard":"#,##0.###"},"currencyFormats-numberSystem-latn":{"standard":"#,##0.00 ¤","standard-noCurrency":"#,##0.00","accounting":"#,##0.00 ¤","accounting-noCurrency":"#,##0.00"}},"currency":{"iso":"USD","symbol":"$"}}}
+\ No newline at end of file
++{
++    "en": {
++        "dates": {
++            "day_names": [
++                "Sunday",
++                "Monday",
++                "Tuesday",
++                "Wednesday",
++                "Thursday",
++                "Friday",
++                "Saturday"
++            ],
++            "day_names_short": [
++                "Sun",
++                "Mon",
++                "Tue",
++                "Wed",
++                "Thu",
++                "Fri",
++                "Sat"
++            ],
++            "months": [
++                "January",
++                "February",
++                "March",
++                "April",
++                "May",
++                "June",
++                "July",
++                "August",
++                "September",
++                "October",
++                "November",
++                "December"
++            ],
++            "months_short": [
++                "Jan",
++                "Feb",
++                "Mar",
++                "Apr",
++                "May",
++                "Jun",
++                "Jul",
++                "Aug",
++                "Sep",
++                "Oct",
++                "Nov",
++                "Dec"
++            ],
++            "months_letter": [
++                "J",
++                "F",
++                "M",
++                "A",
++                "M",
++                "J",
++                "J",
++                "A",
++                "S",
++                "O",
++                "N",
++                "D"
++            ]
++        },
++        "numbers": {
++            "symbols-numberSystem-latn": {
++                "decimal": ".",
++                "group": ",",
++                "list": ";",
++                "percentSign": "%",
++                "plusSign": "+",
++                "minusSign": "-",
++                "approximatelySign": "~",
++                "exponential": "E",
++                "superscriptingExponent": "×",
++                "perMille": "‰",
++                "infinity": "∞",
++                "nan": "NaN",
++                "timeSeparator": ":"
++            },
++            "decimalFormats-numberSystem-latn": {
++                "standard": "#,##0.###"
++            },
++            "currencyFormats-numberSystem-latn": {
++                "standard": "¤#,##0.00",
++                "standard-alphaNextToNumber": "¤ #,##0.00",
++                "standard-noCurrency": "#,##0.00",
++                "accounting": "¤#,##0.00;(¤#,##0.00)",
++                "accounting-alphaNextToNumber": "¤ #,##0.00;(¤ #,##0.00)",
++                "accounting-noCurrency": "#,##0.00;(#,##0.00)"
++            }
++        },
++        "currency": {
++            "iso": "USD",
++            "symbol": "$"
++        }
++    },
++    "en-GB": {
++        "dates": {
++            "day_names": [
++                "Sunday",
++                "Monday",
++                "Tuesday",
++                "Wednesday",
++                "Thursday",
++                "Friday",
++                "Saturday"
++            ],
++            "day_names_short": [
++                "Sun",
++                "Mon",
++                "Tue",
++                "Wed",
++                "Thu",
++                "Fri",
++                "Sat"
++            ],
++            "months": [
++                "January",
++                "February",
++                "March",
++                "April",
++                "May",
++                "June",
++                "July",
++                "August",
++                "September",
++                "October",
++                "November",
++                "December"
++            ],
++            "months_short": [
++                "Jan",
++                "Feb",
++                "Mar",
++                "Apr",
++                "May",
++                "Jun",
++                "Jul",
++                "Aug",
++                "Sept",
++                "Oct",
++                "Nov",
++                "Dec"
++            ],
++            "months_letter": [
++                "J",
++                "F",
++                "M",
++                "A",
++                "M",
++                "J",
++                "J",
++                "A",
++                "S",
++                "O",
++                "N",
++                "D"
++            ]
++        },
++        "numbers": {
++            "symbols-numberSystem-latn": {
++                "decimal": ".",
++                "group": ",",
++                "list": ";",
++                "percentSign": "%",
++                "plusSign": "+",
++                "minusSign": "-",
++                "approximatelySign": "~",
++                "exponential": "E",
++                "superscriptingExponent": "×",
++                "perMille": "‰",
++                "infinity": "∞",
++                "nan": "NaN",
++                "timeSeparator": ":"
++            },
++            "decimalFormats-numberSystem-latn": {
++                "standard": "#,##0.###"
++            },
++            "currencyFormats-numberSystem-latn": {
++                "standard": "¤#,##0.00",
++                "standard-alphaNextToNumber": "¤ #,##0.00",
++                "standard-noCurrency": "#,##0.00",
++                "accounting": "¤#,##0.00;(¤#,##0.00)",
++                "accounting-alphaNextToNumber": "¤ #,##0.00;(¤ #,##0.00)",
++                "accounting-noCurrency": "#,##0.00;(#,##0.00)"
++            }
++        },
++        "currency": {
++            "iso": "USD",
++            "symbol": "$"
++        }
++    },
++    "es": {
++        "dates": {
++            "day_names": [
++                "domingo",
++                "lunes",
++                "martes",
++                "miércoles",
++                "jueves",
++                "viernes",
++                "sábado"
++            ],
++            "day_names_short": [
++                "dom",
++                "lun",
++                "mar",
++                "mié",
++                "jue",
++                "vie",
++                "sáb"
++            ],
++            "months": [
++                "enero",
++                "febrero",
++                "marzo",
++                "abril",
++                "mayo",
++                "junio",
++                "julio",
++                "agosto",
++                "septiembre",
++                "octubre",
++                "noviembre",
++                "diciembre"
++            ],
++            "months_short": [
++                "ene",
++                "feb",
++                "mar",
++                "abr",
++                "may",
++                "jun",
++                "jul",
++                "ago",
++                "sept",
++                "oct",
++                "nov",
++                "dic"
++            ],
++            "months_letter": [
++                "E",
++                "F",
++                "M",
++                "A",
++                "M",
++                "J",
++                "J",
++                "A",
++                "S",
++                "O",
++                "N",
++                "D"
++            ]
++        },
++        "numbers": {
++            "symbols-numberSystem-latn": {
++                "decimal": ",",
++                "group": ".",
++                "list": ";",
++                "percentSign": "%",
++                "plusSign": "+",
++                "minusSign": "-",
++                "approximatelySign": "~",
++                "exponential": "E",
++                "superscriptingExponent": "×",
++                "perMille": "‰",
++                "infinity": "∞",
++                "nan": "NaN",
++                "timeSeparator": ":"
++            },
++            "decimalFormats-numberSystem-latn": {
++                "standard": "#,##0.###"
++            },
++            "currencyFormats-numberSystem-latn": {
++                "standard": "#,##0.00 ¤",
++                "standard-noCurrency": "#,##0.00",
++                "accounting": "#,##0.00 ¤",
++                "accounting-noCurrency": "#,##0.00"
++            }
++        },
++        "currency": {
++            "iso": "USD",
++            "symbol": "$"
++        }
++    },
++    "de": {
++        "dates": {
++            "day_names": [
++                "Sonntag",
++                "Montag",
++                "Dienstag",
++                "Mittwoch",
++                "Donnerstag",
++                "Freitag",
++                "Samstag"
++            ],
++            "day_names_short": [
++                "So.",
++                "Mo.",
++                "Di.",
++                "Mi.",
++                "Do.",
++                "Fr.",
++                "Sa."
++            ],
++            "months": [
++                "Januar",
++                "Februar",
++                "März",
++                "April",
++                "Mai",
++                "Juni",
++                "Juli",
++                "August",
++                "September",
++                "Oktober",
++                "November",
++                "Dezember"
++            ],
++            "months_short": [
++                "Jan.",
++                "Feb.",
++                "März",
++                "Apr.",
++                "Mai",
++                "Juni",
++                "Juli",
++                "Aug.",
++                "Sept.",
++                "Okt.",
++                "Nov.",
++                "Dez."
++            ],
++            "months_letter": [
++                "J",
++                "F",
++                "M",
++                "A",
++                "M",
++                "J",
++                "J",
++                "A",
++                "S",
++                "O",
++                "N",
++                "D"
++            ]
++        },
++        "numbers": {
++            "symbols-numberSystem-latn": {
++                "decimal": ",",
++                "group": ".",
++                "list": ";",
++                "percentSign": "%",
++                "plusSign": "+",
++                "minusSign": "-",
++                "approximatelySign": "≈",
++                "exponential": "E",
++                "superscriptingExponent": "·",
++                "perMille": "‰",
++                "infinity": "∞",
++                "nan": "NaN",
++                "timeSeparator": ":"
++            },
++            "decimalFormats-numberSystem-latn": {
++                "standard": "#,##0.###"
++            },
++            "currencyFormats-numberSystem-latn": {
++                "standard": "#,##0.00 ¤",
++                "standard-noCurrency": "#,##0.00",
++                "accounting": "#,##0.00 ¤",
++                "accounting-noCurrency": "#,##0.00"
++            }
++        },
++        "currency": {
++            "iso": "USD",
++            "symbol": "$"
++        }
++    },
++    "ru": {
++        "dates": {
++            "day_names": [
++                "воскресенье",
++                "понедельник",
++                "вторник",
++                "среда",
++                "четверг",
++                "пятница",
++                "суббота"
++            ],
++            "day_names_short": [
++                "вс",
++                "пн",
++                "вт",
++                "ср",
++                "чт",
++                "пт",
++                "сб"
++            ],
++            "months": [
++                "январь",
++                "февраль",
++                "март",
++                "апрель",
++                "май",
++                "июнь",
++                "июль",
++                "август",
++                "сентябрь",
++                "октябрь",
++                "ноябрь",
++                "декабрь"
++            ],
++            "months_short": [
++                "янв.",
++                "февр.",
++                "март",
++                "апр.",
++                "май",
++                "июнь",
++                "июль",
++                "авг.",
++                "сент.",
++                "окт.",
++                "нояб.",
++                "дек."
++            ],
++            "months_letter": [
++                "Я",
++                "Ф",
++                "М",
++                "А",
++                "М",
++                "И",
++                "И",
++                "А",
++                "С",
++                "О",
++                "Н",
++                "Д"
++            ]
++        },
++        "numbers": {
++            "symbols-numberSystem-latn": {
++                "decimal": ",",
++                "group": " ",
++                "list": ";",
++                "percentSign": "%",
++                "plusSign": "+",
++                "minusSign": "-",
++                "approximatelySign": "≈",
++                "exponential": "E",
++                "superscriptingExponent": "×",
++                "perMille": "‰",
++                "infinity": "∞",
++                "nan": "не число",
++                "timeSeparator": ":"
++            },
++            "decimalFormats-numberSystem-latn": {
++                "standard": "#,##0.###"
++            },
++            "currencyFormats-numberSystem-latn": {
++                "standard": "#,##0.00 ¤",
++                "standard-noCurrency": "#,##0.00",
++                "accounting": "#,##0.00 ¤",
++                "accounting-noCurrency": "#,##0.00"
++            }
++        },
++        "currency": {
++            "iso": "RUB",
++            "symbol": "₽"
++        }
++    }
++}
+\ No newline at end of file
+diff --git a/webapp/IronCalc/src/i18n.ts b/webapp/IronCalc/src/i18n.ts
+index 27f92df1..c78b0878 100644
+--- a/webapp/IronCalc/src/i18n.ts
++++ b/webapp/IronCalc/src/i18n.ts
+@@ -2,9 +2,11 @@ import i18n from "i18next";
+ import { initReactI18next } from "react-i18next";
+ 
+ import translationEN from "./locale/en_us.json";
++import translationRU from "./locale/ru_ru.json";
+ 
+ const resources = {
+   "en-US": { translation: translationEN },
++  "ru-RU": { translation: translationRU },
+ };
+ 
+ i18n.use(initReactI18next).init({
+diff --git a/webapp/IronCalc/src/locale/ru_ru.json b/webapp/IronCalc/src/locale/ru_ru.json
+new file mode 100644
+index 00000000..3bbc6a63
+--- /dev/null
++++ b/webapp/IronCalc/src/locale/ru_ru.json
+@@ -0,0 +1,171 @@
++{
++    "toolbar": {
++        "redo": "Повторить",
++        "undo": "Отменить",
++        "copy_styles": "Копировать стили",
++        "clear_formatting": "Очистить форматирование",
++        "euro": "Формат Евро",
++        "percentage": "Формат Процент",
++        "bold": "Жирный",
++        "italic": "Курсив",
++        "underline": "Подчёркнутый",
++        "strike_through": "Зачёркнутый",
++        "align_left": "По левому краю",
++        "align_right": "По правому краю",
++        "align_center": "По центру",
++        "format_number": "Формат числа",
++        "font_color": "Цвет шрифта",
++        "fill_color": "Цвет заливки",
++        "increase_font_size": "Увеличить шрифт",
++        "decrease_font_size": "Уменьшить шрифт",
++        "decimal_places_increase": "Добавить разряд",
++        "decimal_places_decrease": "Убрать разряд",
++        "show_hide_grid_lines": "Показать/скрыть сетку",
++        "named_ranges": "Именованные диапазоны",
++        "vertical_align_bottom": "По нижнему краю",
++        "vertical_align_middle": "По середине",
++        "vertical_align_top": "По верхнему краю",
++        "selected_png": "Экспорт области в PNG",
++        "wrap_text": "Перенос текста",
++        "scroll_left": "Прокрутить влево",
++        "scroll_right": "Прокрутить вправо",
++        "format_menu": {
++            "auto": "Авто",
++            "number": "Число",
++            "percentage": "Процент",
++            "currency_eur": "Евро (EUR)",
++            "currency_usd": "Доллар (USD)",
++            "currency_gbp": "Фунт стерлингов (GBP)",
++            "date_short": "Краткая дата",
++            "date_long": "Полная дата",
++            "custom": "Другой",
++            "number_example": "1 000,00",
++            "percentage_example": "10%",
++            "currency_eur_example": "€",
++            "currency_usd_example": "$",
++            "currency_gbp_example": "£",
++            "date_short_example": "24.09.2024",
++            "date_long_example": "Вторник, 24 сентября 2024 г."
++        },
++        "borders": {
++            "title": "Границы",
++            "all": "Все границы",
++            "inner": "Внутренние границы",
++            "outer": "Внешние границы",
++            "top": "Верхняя граница",
++            "bottom": "Нижняя граница",
++            "clear": "Убрать границы",
++            "left": "Левая граница",
++            "right": "Правая граница",
++            "horizontal": "Горизонтальные границы",
++            "vertical": "Вертикальные границы",
++            "color": "Цвет границы",
++            "style": "Стиль границы"
++        }
++    },
++    "num_fmt": {
++        "title": "Пользовательский формат числа",
++        "label": "Формат числа",
++        "close": "Закрыть",
++        "save": "Сохранить"
++    },
++    "sheet_rename": {
++        "rename": "Сохранить",
++        "label": "Новое имя",
++        "title": "Переименовать лист",
++        "close": "Закрыть"
++    },
++    "sheet_delete": {
++        "title": "Вы уверены?",
++        "message": "Лист '{{sheetName}}' будет удалён.",
++        "confirm": "Да, удалить лист",
++        "cancel": "Отмена"
++    },
++    "sheet_tab": {
++        "rename": "Переименовать",
++        "change_color": "Изменить цвет",
++        "delete": "Удалить",
++        "hide_sheet": "Скрыть лист"
++    },
++    "formula_input": {
++        "update": "Обновить",
++        "label": "Формула",
++        "title": "Изменить формулу"
++    },
++    "formula_bar": {
++        "manage_named_ranges": "Управление именованными диапазонами"
++    },
++    "navigation": {
++        "add_sheet": "Добавить лист",
++        "sheet_list": "Список листов",
++        "link": "Открыть ironcalc.com"
++    },
++    "name_manager_dialog": {
++        "title": "Именованные диапазоны",
++        "empty_message1": "Именованных диапазонов пока нет.",
++        "empty_message2": "Нажмите 'Добавить', чтобы создать.",
++        "name": "Имя",
++        "range": "Область",
++        "scope": "Диапазон",
++        "help": "Об именованных диапазонах",
++        "new": "Добавить",
++        "workbook": "Книга",
++        "global": "(Глобальный)",
++        "close": "Закрыть",
++        "delete": "Удалить диапазон",
++        "edit": "Редактировать диапазон",
++        "back_to_list": "Назад к списку",
++        "add_new_range": "Добавить новый диапазон",
++        "edit_range": "Редактировать диапазон",
++        "new_named_range": "Новый именованный диапазон",
++        "range_name": "Имя диапазона",
++        "enter_range_name": "Введите имя диапазона",
++        "scope_label": "Область видимости",
++        "scope_helper": "Область видимости определяет, где доступен именованный диапазон.",
++        "refers_to": "Ссылается на",
++        "enter_formula": "Введите формулу",
++        "cancel": "Отмена",
++        "apply": "Применить",
++        "discard": "Отменить изменения",
++        "errors": {
++            "range_name_required": "Имя диапазона обязательно",
++            "name_cannot_contain_spaces": "Имя не может содержать пробелы",
++            "name_cannot_start_with_number": "Имя не может начинаться с цифры",
++            "name_invalid_characters": "Имя содержит недопустимые символы. Используйте только буквы, цифры, подчёркивания и точки. Должно начинаться с буквы или подчёркивания.",
++            "name_already_exists": "Это имя уже существует в выбранной области"
++        }
++    },
++    "cell_context": {
++        "insert_row_above": "Вставить строку выше",
++        "insert_row_below": "Вставить строку ниже",
++        "insert_column_before": "Вставить столбец слева",
++        "insert_column_after": "Вставить столбец справа",
++        "freeze_columns": "Закрепить до столбца '{{column}}'",
++        "freeze_rows": "Закрепить до строки '{{row}}'",
++        "unfreeze_rows": "Открепить строки",
++        "unfreeze_columns": "Открепить столбцы",
++        "delete_row": "Удалить строку '{{row}}'",
++        "delete_column": "Удалить столбец '{{column}}'",
++        "freeze": "Закрепить",
++        "insert_row": "Вставить строку",
++        "insert_column": "Вставить столбец",
++        "move_row": "Переместить строку",
++        "move_column": "Переместить столбец",
++        "move_row_up": "Переместить строку вверх",
++        "move_row_down": "Переместить строку вниз",
++        "move_column_left": "Переместить столбец влево",
++        "move_column_right": "Переместить столбец вправо"
++    },
++    "color_picker": {
++        "apply": "Добавить цвет",
++        "cancel": "Отмена",
++        "add": "Добавить новый цвет",
++        "default": "Цвет по умолчанию",
++        "no_fill": "Без заливки",
++        "custom": "Другой"
++    },
++    "right_drawer": {
++        "close": "Закрыть",
++        "resize_drawer": "Изменить размер панели"
++    }
++}
+\ No newline at end of file
+-- 
+2.51.1.windows.1
+

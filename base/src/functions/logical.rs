@@ -284,4 +284,26 @@ impl Model {
             message: "Did not find a match".to_string(),
         }
     }
+
+    /// =LAMBDA(param1, [param2, ...], body)(arg1, [arg2, ...])
+    /// LAMBDA creates a custom function that can be called with arguments.
+    /// The last argument to LAMBDA is always the body (expression to evaluate).
+    /// All preceding arguments are parameter names.
+    pub(crate) fn fn_lambda(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        // LAMBDA needs at least 1 argument (the body)
+        if args.is_empty() {
+            return CalcResult::new_args_number_error(cell);
+        }
+
+        // For now, return #CALC! error to indicate LAMBDA is not yet fully implemented
+        // but is recognized as a function. Full implementation requires:
+        // 1. Storing the lambda definition (params + body)
+        // 2. Parser support for LAMBDA(...)(...) call syntax
+        // 3. Scoped variable binding during evaluation
+        CalcResult::new_error(
+            Error::CALC,
+            cell,
+            "LAMBDA function not yet fully implemented - requires call syntax support".to_string(),
+        )
+    }
 }

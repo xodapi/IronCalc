@@ -625,6 +625,7 @@ fn get_function_args_signature(kind: &Function, arg_count: usize) -> Vec<Signatu
         Function::Iferror => args_signature_scalars(arg_count, 2, 0),
         Function::Ifna => args_signature_scalars(arg_count, 2, 0),
         Function::Ifs => vec![Signature::Scalar; arg_count],
+        Function::Lambda => vec![Signature::Scalar; arg_count],  // LAMBDA args are variadic
         Function::Not => args_signature_scalars(arg_count, 1, 0),
         Function::Or => vec![Signature::Vector; arg_count],
         Function::Switch => vec![Signature::Scalar; arg_count],
@@ -1019,6 +1020,7 @@ fn static_analysis_on_function(kind: &Function, args: &[Node]) -> StaticResult {
         Function::Iferror => scalar_arguments(args),
         Function::Ifna => scalar_arguments(args),
         Function::Ifs => not_implemented(args),
+        Function::Lambda => StaticResult::Unknown,  // LAMBDA result depends on body
         Function::Not => StaticResult::Scalar,
         Function::Or => StaticResult::Scalar,
         Function::Switch => not_implemented(args),

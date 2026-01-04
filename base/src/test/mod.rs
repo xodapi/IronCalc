@@ -93,3 +93,5 @@ mod test_today;
 mod test_trigonometric_reciprocals;
 mod test_types;
 mod user_model;
+
+mod test_lambda;
