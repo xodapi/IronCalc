@@ -97,3 +97,4 @@ mod user_model;
 mod test_lambda;
 mod test_spilling;
 mod test_bug_fixes;
+mod test_xlookup;
