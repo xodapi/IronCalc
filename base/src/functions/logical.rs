@@ -168,6 +168,13 @@ impl Model {
                                         message: "Arrays not supported yet".to_string(),
                                     }
                                 }
+                                CalcResult::Lambda(_) => {
+                                    return CalcResult::new_error(
+                                        Error::VALUE,
+                                        cell,
+                                        "Cannot use LAMBDA as boolean".to_string(),
+                                    )
+                                }
                             }
                             if let (Some(current_result), Some(short_circuit_value)) =
                                 (result, short_circuit_value)
@@ -198,6 +205,13 @@ impl Model {
                         origin: cell,
                         message: "Arrays not supported yet".to_string(),
                     }
+                }
+                CalcResult::Lambda(_) => {
+                    return CalcResult::new_error(
+                        Error::VALUE,
+                        cell,
+                        "Cannot use LAMBDA as boolean".to_string(),
+                    )
                 }
             }
 
@@ -295,15 +309,7 @@ impl Model {
             return CalcResult::new_args_number_error(cell);
         }
 
-        // For now, return #CALC! error to indicate LAMBDA is not yet fully implemented
-        // but is recognized as a function. Full implementation requires:
-        // 1. Storing the lambda definition (params + body)
-        // 2. Parser support for LAMBDA(...)(...) call syntax
-        // 3. Scoped variable binding during evaluation
-        CalcResult::new_error(
-            Error::CALC,
-            cell,
-            "LAMBDA function not yet fully implemented - requires call syntax support".to_string(),
-        )
+        // Return a Lambda value that can be stored and called later
+        CalcResult::Lambda(args.to_vec())
     }
 }

@@ -95,3 +95,4 @@ mod test_types;
 mod user_model;
 
 mod test_lambda;
+mod test_spilling;

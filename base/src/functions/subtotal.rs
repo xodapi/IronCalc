@@ -189,6 +189,13 @@ impl Model {
                                 message: "Arrays not supported yet".to_string(),
                             })
                         }
+                        CalcResult::Lambda(_) => {
+                            return Err(CalcResult::new_error(
+                                Error::VALUE,
+                                cell,
+                                "Cannot use LAMBDA as number".to_string(),
+                            ))
+                        }
                     }
                 }
             }
@@ -439,6 +446,13 @@ impl Model {
                                 origin: cell,
                                 message: "Arrays not supported yet".to_string(),
                             }
+                        }
+                        CalcResult::Lambda(_) => {
+                            return CalcResult::new_error(
+                                Error::VALUE,
+                                cell,
+                                "Cannot use LAMBDA".to_string(),
+                            )
                         }
                     }
                 }

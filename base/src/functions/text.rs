@@ -102,6 +102,13 @@ impl Model {
                                         message: "Arrays not supported yet".to_string(),
                                     }
                                 }
+                                CalcResult::Lambda(_) => {
+                                    return CalcResult::new_error(
+                                        Error::VALUE,
+                                        cell,
+                                        "Cannot use LAMBDA as text value".to_string(),
+                                    )
+                                }
                             }
                         }
                     }
@@ -112,6 +119,13 @@ impl Model {
                         origin: cell,
                         message: "Arrays not supported yet".to_string(),
                     }
+                }
+                CalcResult::Lambda(_) => {
+                    return CalcResult::new_error(
+                        Error::VALUE,
+                        cell,
+                        "Cannot use LAMBDA as text value".to_string(),
+                    )
                 }
             };
         }
@@ -143,6 +157,13 @@ impl Model {
                         origin: cell,
                         message: "Arrays not supported yet".to_string(),
                     }
+                }
+                CalcResult::Lambda(_) => {
+                    return CalcResult::new_error(
+                        Error::VALUE,
+                        cell,
+                        "Cannot use LAMBDA as text value".to_string(),
+                    )
                 }
             };
             let format_code = match self.get_string(&args[1], cell) {
@@ -306,6 +327,13 @@ impl Model {
                         message: "Arrays not supported yet".to_string(),
                     }
                 }
+                CalcResult::Lambda(_) => {
+                    return CalcResult::new_error(
+                        Error::VALUE,
+                        cell,
+                        "Cannot use LAMBDA as text value".to_string(),
+                    )
+                }
             };
             return CalcResult::Number(s.chars().count() as f64);
         }
@@ -341,6 +369,13 @@ impl Model {
                         message: "Arrays not supported yet".to_string(),
                     }
                 }
+                CalcResult::Lambda(_) => {
+                    return CalcResult::new_error(
+                        Error::VALUE,
+                        cell,
+                        "Cannot use LAMBDA as text value".to_string(),
+                    )
+                }
             };
             return CalcResult::String(s.trim().to_owned());
         }
@@ -375,6 +410,13 @@ impl Model {
                         origin: cell,
                         message: "Arrays not supported yet".to_string(),
                     }
+                }
+                CalcResult::Lambda(_) => {
+                    return CalcResult::new_error(
+                        Error::VALUE,
+                        cell,
+                        "Cannot use LAMBDA as text value".to_string(),
+                    )
                 }
             };
             return CalcResult::String(s.to_lowercase());
@@ -416,6 +458,13 @@ impl Model {
                         origin: cell,
                         message: "Arrays not supported yet".to_string(),
                     }
+                }
+                CalcResult::Lambda(_) => {
+                    return CalcResult::new_error(
+                        Error::VALUE,
+                        cell,
+                        "Cannot use LAMBDA as text value".to_string(),
+                    )
                 }
             };
 
@@ -465,6 +514,13 @@ impl Model {
                         message: "Arrays not supported yet".to_string(),
                     }
                 }
+                CalcResult::Lambda(_) => {
+                    return CalcResult::new_error(
+                        Error::VALUE,
+                        cell,
+                        "Cannot use LAMBDA as text value".to_string(),
+                    )
+                }
             };
             return CalcResult::String(s.to_uppercase());
         }
@@ -502,6 +558,13 @@ impl Model {
                     message: "Arrays not supported yet".to_string(),
                 }
             }
+            CalcResult::Lambda(_) => {
+                return CalcResult::new_error(
+                    Error::VALUE,
+                    cell,
+                    "Cannot use LAMBDA as text value".to_string(),
+                )
+            }
         };
         let num_chars = if args.len() == 2 {
             match self.evaluate_node_in_context(&args[1], cell) {
@@ -538,6 +601,13 @@ impl Model {
                         origin: cell,
                         message: "Arrays not supported yet".to_string(),
                     }
+                }
+                CalcResult::Lambda(_) => {
+                    return CalcResult::new_error(
+                        Error::VALUE,
+                        cell,
+                        "Cannot use LAMBDA as number".to_string(),
+                    )
                 }
             }
         } else {
@@ -584,6 +654,13 @@ impl Model {
                     message: "Arrays not supported yet".to_string(),
                 }
             }
+            CalcResult::Lambda(_) => {
+                return CalcResult::new_error(
+                    Error::VALUE,
+                    cell,
+                    "Cannot use LAMBDA as text value".to_string(),
+                )
+            }
         };
         let num_chars = if args.len() == 2 {
             match self.evaluate_node_in_context(&args[1], cell) {
@@ -620,6 +697,13 @@ impl Model {
                         origin: cell,
                         message: "Arrays not supported yet".to_string(),
                     }
+                }
+                CalcResult::Lambda(_) => {
+                    return CalcResult::new_error(
+                        Error::VALUE,
+                        cell,
+                        "Cannot use LAMBDA as number".to_string(),
+                    )
                 }
             }
         } else {
@@ -665,6 +749,13 @@ impl Model {
                     origin: cell,
                     message: "Arrays not supported yet".to_string(),
                 }
+            }
+            CalcResult::Lambda(_) => {
+                return CalcResult::new_error(
+                    Error::VALUE,
+                    cell,
+                    "Cannot use LAMBDA as text value".to_string(),
+                )
             }
         };
         let start_num = match self.evaluate_node_in_context(&args[1], cell) {
@@ -736,6 +827,13 @@ impl Model {
                     origin: cell,
                     message: "Arrays not supported yet".to_string(),
                 }
+            }
+            CalcResult::Lambda(_) => {
+                return CalcResult::new_error(
+                    Error::VALUE,
+                    cell,
+                    "Cannot use LAMBDA as number".to_string(),
+                )
             }
         };
         let mut result = "".to_string();
@@ -1086,6 +1184,13 @@ impl Model {
                                         message: "Arrays not supported yet".to_string(),
                                     }
                                 }
+                                CalcResult::Lambda(_) => {
+                                    return CalcResult::new_error(
+                                        Error::VALUE,
+                                        cell,
+                                        "Cannot use LAMBDA as text value".to_string(),
+                                    )
+                                }
                             }
                         }
                     }
@@ -1111,6 +1216,13 @@ impl Model {
                         origin: cell,
                         message: "Arrays not supported yet".to_string(),
                     }
+                }
+                CalcResult::Lambda(_) => {
+                    return CalcResult::new_error(
+                        Error::VALUE,
+                        cell,
+                        "Cannot use LAMBDA as text value".to_string(),
+                    )
                 }
             };
         }
@@ -1240,6 +1352,11 @@ impl Model {
                 origin: cell,
                 message: "Arrays not supported yet".to_string(),
             },
+            CalcResult::Lambda(_) => CalcResult::new_error(
+                Error::VALUE,
+                cell,
+                "Cannot use LAMBDA as number".to_string(),
+            ),
         }
     }
 

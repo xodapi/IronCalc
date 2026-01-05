@@ -50,6 +50,7 @@ use crate::expressions::token::{OpCompare, OpProduct, OpSum};
 
 use crate::language::Language;
 use crate::locale::Locale;
+use crate::functions::Function;
 
 use super::token::{Error, TokenType};
 use super::types::*;
@@ -315,7 +316,18 @@ impl Lexer {
                                 return TokenType::Boolean(false);
                             }
                             if self.peek_char() == Some('(') {
-                                return TokenType::Ident(name);
+                                // Check if this is a known function name first
+                                // Functions like LOG10 look like cell refs but are actually functions
+                                if Function::get_function(&name).is_some() {
+                                    return TokenType::Ident(name);
+                                }
+                                // Otherwise, check if name looks like a cell reference (A1, B5, etc.)
+                                // If so, don't return Ident - let it be parsed as Reference
+                                // This allows LAMBDA stored in cells to be called: =A1(10)
+                                let parsed_ref = utils::parse_reference_a1(&name_upper);
+                                if parsed_ref.is_none() {
+                                    return TokenType::Ident(name);
+                                }
                             }
                             if self.mode == LexerMode::A1 {
                                 let parsed_reference = utils::parse_reference_a1(&name_upper);

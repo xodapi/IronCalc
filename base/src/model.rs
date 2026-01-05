@@ -118,6 +118,10 @@ pub struct Model {
     pub(crate) view_id: u32,
     /// Lambda scope for variable binding during LAMBDA evaluation
     pub(crate) lambda_scope: HashMap<String, CalcResult>,
+    /// Cache for LAMBDA values in cells - allows callable lambdas
+    pub(crate) lambda_cache: HashMap<(u32, i32, i32), Vec<Node>>,
+    /// Tracks 'Ghost' cells created by array spilling
+    pub(crate) spilled_cells: std::collections::HashSet<(u32, i32, i32)>,
 }
 
 // FIXME: Maybe this should be the same as CellReference
@@ -593,9 +597,61 @@ impl Model {
                         result
                     }
                     _ => {
-                        // Not a lambda, but was called - error
+                        // Not a lambda node directly, but could be a reference to a cell containing lambda
                         // First evaluate the callee
                         let callee_result = self.evaluate_node_in_context(callee, cell);
+                        
+                        // Check if it's a Lambda value
+                        if let CalcResult::Lambda(lambda_nodes) = callee_result {
+                            // lambda_nodes contains: [param1, param2, ..., body]
+                            let param_count = lambda_nodes.len().saturating_sub(1);
+                            
+                            if args.len() != param_count {
+                                return CalcResult::new_error(
+                                    Error::VALUE,
+                                    cell,
+                                    format!(
+                                        "LAMBDA expected {} arguments but got {}",
+                                        param_count,
+                                        args.len()
+                                    ),
+                                );
+                            }
+                            
+                            let body = &lambda_nodes[param_count];
+                            
+                            // Simple case: no parameters, just evaluate body
+                            if param_count == 0 {
+                                return self.evaluate_node_in_context(body, cell);
+                            }
+                            
+                            // Save the old scope to restore it later
+                            let old_scope = self.lambda_scope.clone();
+                            
+                            for i in 0..param_count {
+                                let param = &lambda_nodes[i];
+                                if let WrongVariableKind(param_name) = param {
+                                    let arg_value = self.evaluate_node_in_context(&args[i], cell);
+                                    if arg_value.is_error() {
+                                        self.lambda_scope = old_scope;
+                                        return arg_value;
+                                    }
+                                    self.lambda_scope.insert(param_name.clone(), arg_value);
+                                } else {
+                                    self.lambda_scope = old_scope;
+                                    return CalcResult::new_error(
+                                        Error::VALUE,
+                                        cell,
+                                        format!("LAMBDA parameter {} is not a valid identifier", i + 1),
+                                    );
+                                }
+                            }
+                            
+                            let result = self.evaluate_node_in_context(body, cell);
+                            self.lambda_scope = old_scope;
+                            return result;
+                        }
+                        
                         if callee_result.is_error() {
                             return callee_result;
                         }
@@ -629,6 +685,11 @@ impl Model {
     #[allow(clippy::expect_used)]
     fn set_cell_value(&mut self, cell_reference: CellReferenceIndex, result: &CalcResult) {
         let CellReferenceIndex { sheet, column, row } = cell_reference;
+        
+        // Zombie Lambda Prevention: Clear any cached Lambda for this cell
+        // before setting new value (prevents stale Lambda from being returned)
+        self.lambda_cache.remove(&(sheet, row, column));
+        
         let cell = &self.workbook.worksheets[sheet as usize].sheet_data[&row][&column];
         let s = cell.get_style();
         if let Some(f) = cell.get_formula() {
@@ -756,18 +817,171 @@ impl Model {
                         .get_mut(&column)
                         .expect("expected a column") = Cell::CellFormulaNumber { f, s, v: 0.0 };
                 }
-                CalcResult::Array(_) => {
+                CalcResult::Array(arr) => {
+                    // Dynamic Array Spilling Implementation
+                    let rows = arr.len();
+                    if rows == 0 {
+                        *self.workbook.worksheets[sheet as usize]
+                            .sheet_data
+                            .get_mut(&row)
+                            .expect("expected a row")
+                            .get_mut(&column)
+                            .expect("expected a column") = Cell::CellFormulaNumber { f, s, v: 0.0 };
+                        return;
+                    }
+                    
+                    let cols = arr[0].len();
+                    
+                    // Check for collisions in spill range (excluding anchor cell)
+                    let mut has_collision = false;
+                    for r_offset in 0..rows {
+                        for c_offset in 0..cols {
+                            if r_offset == 0 && c_offset == 0 {
+                                continue; // Skip anchor cell
+                            }
+                            let target_row = row + r_offset as i32;
+                            let target_col = column + c_offset as i32;
+                            
+                            // Check if target cell exists and is not empty
+                            if let Some(row_data) = self.workbook.worksheets[sheet as usize].sheet_data.get(&target_row) {
+                                if let Some(cell) = row_data.get(&target_col) {
+                                    // If it's not a spilled ghost cell and not empty, it's a collision
+                                    if !self.spilled_cells.contains(&(sheet, target_row, target_col)) {
+                                        match cell {
+                                            Cell::EmptyCell { .. } => {}
+                                            _ => {
+                                                has_collision = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if has_collision {
+                            break;
+                        }
+                    }
+                    
+                    if has_collision {
+                        // Spill collision - return #SPILL! error
+                        *self.workbook.worksheets[sheet as usize]
+                            .sheet_data
+                            .get_mut(&row)
+                            .expect("expected a row")
+                            .get_mut(&column)
+                            .expect("expected a column") = Cell::CellFormulaError {
+                            f,
+                            s,
+                            o: "".to_string(),
+                            m: "Spill range not empty".to_string(),
+                            ei: Error::SPILL,
+                        };
+                    } else {
+                        // Write first value to anchor cell
+                        use crate::expressions::parser::ArrayNode;
+                        match &arr[0][0] {
+                            ArrayNode::Number(v) => {
+                                *self.workbook.worksheets[sheet as usize]
+                                    .sheet_data
+                                    .get_mut(&row)
+                                    .expect("expected a row")
+                                    .get_mut(&column)
+                                    .expect("expected a column") = Cell::CellFormulaNumber { f, s, v: *v };
+                            }
+                            ArrayNode::String(v) => {
+                                *self.workbook.worksheets[sheet as usize]
+                                    .sheet_data
+                                    .get_mut(&row)
+                                    .expect("expected a row")
+                                    .get_mut(&column)
+                                    .expect("expected a column") = Cell::CellFormulaString { f, s, v: v.clone() };
+                            }
+                            ArrayNode::Boolean(v) => {
+                                *self.workbook.worksheets[sheet as usize]
+                                    .sheet_data
+                                    .get_mut(&row)
+                                    .expect("expected a row")
+                                    .get_mut(&column)
+                                    .expect("expected a column") = Cell::CellFormulaBoolean { f, s, v: *v };
+                            }
+                            ArrayNode::Error(e) => {
+                                *self.workbook.worksheets[sheet as usize]
+                                    .sheet_data
+                                    .get_mut(&row)
+                                    .expect("expected a row")
+                                    .get_mut(&column)
+                                    .expect("expected a column") = Cell::CellFormulaError {
+                                    f,
+                                    s,
+                                    o: "".to_string(),
+                                    m: "Array element error".to_string(),
+                                    ei: e.clone(),
+                                };
+                            }
+                        }
+                        
+                        // Spill remaining values to neighbor cells
+                        for r_offset in 0..rows {
+                            for c_offset in 0..cols {
+                                if r_offset == 0 && c_offset == 0 {
+                                    continue; // Skip anchor (already set)
+                                }
+                                let target_row = row + r_offset as i32;
+                                let target_col = column + c_offset as i32;
+                                
+                                // Ensure target cell exists
+                                self.workbook.worksheets[sheet as usize]
+                                    .sheet_data
+                                    .entry(target_row)
+                                    .or_default()
+                                    .entry(target_col)
+                                    .or_insert(Cell::EmptyCell { s: 0 });
+                                
+                                // Write spilled value based on ArrayNode type
+                                let target_cell = self.workbook.worksheets[sheet as usize]
+                                    .sheet_data
+                                    .get_mut(&target_row)
+                                    .expect("expected a row")
+                                    .get_mut(&target_col)
+                                    .expect("expected a column");
+                                
+                                match &arr[r_offset][c_offset] {
+                                    ArrayNode::Number(v) => {
+                                        *target_cell = Cell::NumberCell { v: *v, s: 0 };
+                                    }
+                                    ArrayNode::String(v) => {
+                                        // For strings, add to shared strings
+                                        let si = self.workbook.shared_strings.len() as i32;
+                                        self.workbook.shared_strings.push(v.clone());
+                                        *target_cell = Cell::SharedString { si, s: 0 };
+                                    }
+                                    ArrayNode::Boolean(v) => {
+                                        *target_cell = Cell::BooleanCell { v: *v, s: 0 };
+                                    }
+                                    ArrayNode::Error(e) => {
+                                        *target_cell = Cell::ErrorCell { ei: e.clone(), s: 0 };
+                                    }
+                                }
+                                
+                                // Track as spilled/ghost cell
+                                self.spilled_cells.insert((sheet, target_row, target_col));
+                            }
+                        }
+                    }
+                }
+                CalcResult::Lambda(nodes) => {
+                    // LAMBDA values stored in cells - save nodes in cache for later calls
+                    self.lambda_cache.insert((sheet, row, column), nodes.clone());
                     *self.workbook.worksheets[sheet as usize]
                         .sheet_data
                         .get_mut(&row)
                         .expect("expected a row")
                         .get_mut(&column)
-                        .expect("expected a column") = Cell::CellFormulaError {
+                        .expect("expected a column") = Cell::CellFormulaString {
                         f,
                         s,
-                        o: "".to_string(),
-                        m: "Arrays not supported yet".to_string(),
-                        ei: Error::NIMPL,
+                        v: "<LAMBDA>".to_string(),
                     };
                 }
             }
@@ -840,7 +1054,16 @@ impl Model {
             },
             CellFormulaBoolean { v, .. } => CalcResult::Boolean(*v),
             CellFormulaNumber { v, .. } => CalcResult::Number(*v),
-            CellFormulaString { v, .. } => CalcResult::String(v.clone()),
+            CellFormulaString { v, .. } => {
+                // Check if this is a cached LAMBDA value
+                if v == "<LAMBDA>" {
+                    let key = (cell_reference.sheet, cell_reference.row, cell_reference.column);
+                    if let Some(nodes) = self.lambda_cache.get(&key) {
+                        return CalcResult::Lambda(nodes.clone());
+                    }
+                }
+                CalcResult::String(v.clone())
+            }
             CellFormulaError { ei, o, m, .. } => {
                 if let Some(cell_reference) = self.parse_reference(o) {
                     CalcResult::new_error(ei.clone(), cell_reference, m.clone())
@@ -1024,6 +1247,8 @@ impl Model {
             tz,
             view_id: 0,
             lambda_scope: HashMap::new(),
+            lambda_cache: HashMap::new(),
+            spilled_cells: std::collections::HashSet::new(),
         };
 
         model.parse_formulas();

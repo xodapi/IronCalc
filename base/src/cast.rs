@@ -87,6 +87,10 @@ impl Model {
                                     // the evaluation of a cell should never return an array
                                     ArrayNode::Number(0.0)
                                 }
+                                CalcResult::Lambda(_) => {
+                                    // Lambda stored in a cell - treat as error
+                                    ArrayNode::Error(Error::VALUE)
+                                }
                             };
                         row_data.push(value);
                     }
@@ -96,6 +100,11 @@ impl Model {
             }
             CalcResult::Array(s) => Ok(NumberOrArray::Array(s)),
             error @ CalcResult::Error { .. } => Err(error),
+            CalcResult::Lambda(_) => Err(CalcResult::new_error(
+                Error::VALUE,
+                cell,
+                "Cannot convert LAMBDA to number".to_string(),
+            )),
         }
     }
     pub(crate) fn get_number(
@@ -141,6 +150,11 @@ impl Model {
                 origin: cell,
                 message: "Arrays not supported yet".to_string(),
             }),
+            CalcResult::Lambda(_) => Err(CalcResult::new_error(
+                Error::VALUE,
+                cell,
+                "Cannot convert LAMBDA to number".to_string(),
+            )),
         }
     }
 
@@ -198,6 +212,11 @@ impl Model {
                 origin: cell,
                 message: "Arrays not supported yet".to_string(),
             }),
+            CalcResult::Lambda(_) => Err(CalcResult::new_error(
+                Error::VALUE,
+                cell,
+                "Cannot convert LAMBDA to string".to_string(),
+            )),
         }
     }
 
@@ -247,6 +266,11 @@ impl Model {
                 origin: cell,
                 message: "Arrays not supported yet".to_string(),
             }),
+            CalcResult::Lambda(_) => Err(CalcResult::new_error(
+                Error::VALUE,
+                cell,
+                "Cannot convert LAMBDA to boolean".to_string(),
+            )),
         }
     }
 

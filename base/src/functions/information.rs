@@ -240,6 +240,7 @@ impl Model {
                 origin: cell,
                 message: "Arrays not supported yet".to_string(),
             },
+            CalcResult::Lambda(_) => CalcResult::Number(128.0), // Custom type for LAMBDA
         }
     }
     pub(crate) fn fn_sheet(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
@@ -352,6 +353,13 @@ impl Model {
                     message: "Arrays not supported yet".to_string(),
                 }
             }
+            CalcResult::Lambda(_) => {
+                return CalcResult::new_error(
+                    Error::VALUE,
+                    cell,
+                    "Cannot use LAMBDA as number".to_string(),
+                )
+            }
         };
 
         CalcResult::Number(value)
@@ -445,6 +453,7 @@ impl Model {
                     CalcResult::Range { .. } => "v",
                     CalcResult::EmptyArg => "v",
                     CalcResult::Array(_) => "v",
+                    CalcResult::Lambda(_) => "v",
                 };
                 CalcResult::String(cell_type.to_string())
             }

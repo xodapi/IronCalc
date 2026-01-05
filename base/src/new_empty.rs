@@ -428,6 +428,8 @@ impl Model {
             tz,
             view_id: 0,
             lambda_scope: HashMap::new(),
+            lambda_cache: HashMap::new(),
+            spilled_cells: std::collections::HashSet::new(),
         };
         model.parse_formulas();
         Ok(model)

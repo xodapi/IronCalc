@@ -400,6 +400,7 @@ pub(crate) fn build_criteria<'a>(value: &'a CalcResult) -> Box<dyn Fn(&CalcResul
         }
         CalcResult::Range { left: _, right: _ } => Box::new(move |_x| false),
         CalcResult::Array(_) => Box::new(move |_x| false),
+        CalcResult::Lambda(_) => Box::new(move |_x| false),
         CalcResult::EmptyCell | CalcResult::EmptyArg => Box::new(result_is_equal_to_empty),
     }
 }

@@ -514,6 +514,11 @@ impl Model {
                 origin: cell,
                 message: "Arrays not supported yet".to_string(),
             }),
+            CalcResult::Lambda(_) => Err(CalcResult::new_error(
+                Error::VALUE,
+                cell,
+                "Cannot use LAMBDA as date".to_string(),
+            )),
         }
     }
 
@@ -924,6 +929,11 @@ impl Model {
                 origin: cell,
                 message: "Invalid weekend".to_string(),
             }),
+            CalcResult::Lambda(_) => Err(CalcResult::new_error(
+                Error::VALUE,
+                cell,
+                "Cannot use LAMBDA as weekend".to_string(),
+            )),
         }
     }
 
@@ -1124,6 +1134,11 @@ impl Model {
                 message: "Arrays not supported yet".to_string(),
             },
             CalcResult::EmptyCell | CalcResult::EmptyArg => CalcResult::Number(0.0),
+            CalcResult::Lambda(_) => CalcResult::new_error(
+                Error::VALUE,
+                cell,
+                "Cannot use LAMBDA as date".to_string(),
+            ),
         }
     }
 

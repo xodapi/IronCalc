@@ -560,6 +560,13 @@ impl Model {
                     message: "Arrays not supported yet".to_string(),
                 })
             }
+            CalcResult::Lambda(_) => {
+                return Err(CalcResult::new_error(
+                    Error::VALUE,
+                    cell,
+                    "Cannot use LAMBDA as field".to_string(),
+                ))
+            }
         };
 
         // We search in the database a column whose header matches field_column_name
@@ -589,7 +596,8 @@ impl Model {
                 | CalcResult::Range { .. }
                 | CalcResult::EmptyCell
                 | CalcResult::EmptyArg
-                | CalcResult::Array(_) => {}
+                | CalcResult::Array(_)
+                | CalcResult::Lambda(_) => {}
             }
         }
 
@@ -750,7 +758,7 @@ impl Model {
             }
             CalcResult::EmptyCell | CalcResult::EmptyArg => "".to_string(),
             CalcResult::Error { .. } => return false,
-            CalcResult::Range { .. } | CalcResult::Array(_) => return false,
+            CalcResult::Range { .. } | CalcResult::Array(_) | CalcResult::Lambda(_) => return false,
         };
 
         // Detect operator prefix

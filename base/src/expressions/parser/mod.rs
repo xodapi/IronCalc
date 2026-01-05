@@ -621,13 +621,37 @@ impl Parser {
                     column - context.column
                 };
                 match sheet_index {
-                    Some(index) => Node::ReferenceKind {
-                        sheet_name: sheet,
-                        sheet_index: index,
-                        row,
-                        column,
-                        absolute_row,
-                        absolute_column,
+                    Some(index) => {
+                        let mut result = Node::ReferenceKind {
+                            sheet_name: sheet,
+                            sheet_index: index,
+                            row,
+                            column,
+                            absolute_row,
+                            absolute_column,
+                        };
+                        
+                        // Check if this reference is being called like a function: A1(10)
+                        // This allows LAMBDA stored in cells to be invoked
+                        while self.lexer.peek_token() == TokenType::LeftParenthesis {
+                            self.lexer.advance_token();
+                            let call_args = match self.parse_function_args() {
+                                Ok(s) => s,
+                                Err(e) => return e,
+                            };
+                            if let Err(err) = self.lexer.expect(TokenType::RightParenthesis) {
+                                return Node::ParseErrorKind {
+                                    formula: self.lexer.get_formula(),
+                                    position: err.position,
+                                    message: err.message,
+                                };
+                            }
+                            result = Node::CallKind {
+                                callee: Box::new(result),
+                                args: call_args,
+                            };
+                        }
+                        result
                     },
                     None => Node::WrongReferenceKind {
                         sheet_name: sheet,

@@ -40,7 +40,7 @@ fn test_lambda_as_value() {
     model._set("A2", "=A1(10)");  // Call the lambda from A1 with argument 10
     model.evaluate();
     
-    // A1 should display as a function or #CALC! (not called)
+    // A1 should display as <LAMBDA> (not called)
     // A2 should be 20
     assert_eq!(model._get_text("A2"), "20");
 }
