@@ -37,7 +37,17 @@ fn test_beta_inv_probability_bounds() {
     // probability > 1 should return #NUM!
     model._set("A3", "=BETA.INV(1.2, 2, 2.5, 0.234, 1.2)");
     
+    // Normal case - should return a value
+    model._set("A4", "=BETA.INV(0.5, 2, 2, 0, 1)");
+    
     model.evaluate();
+    
+    // Print ACTUAL values for verification
+    println!("ACTUAL VALUES:");
+    println!("  A1 BETA.INV(1, 1, 2, 0, 1) = '{}'", model._get_text("A1"));
+    println!("  A2 BETA.INV(0, 1, 2, 0, 1) = '{}'", model._get_text("A2"));
+    println!("  A3 BETA.INV(1.2, ...) = '{}'", model._get_text("A3"));
+    println!("  A4 BETA.INV(0.5, 2, 2, 0, 1) = '{}'", model._get_text("A4"));
     
     // All should be #NUM! errors
     assert!(model._get_text("A1").contains("#NUM"), 
