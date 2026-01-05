@@ -26,6 +26,7 @@ mod text;
 mod text_util;
 pub(crate) mod util;
 mod xlookup;
+mod dynamic_arrays;
 
 /// List of all implemented functions
 #[derive(PartialEq, Clone, Debug)]
@@ -156,6 +157,17 @@ pub enum Function {
     Rows,
     Vlookup,
     Xlookup,
+    Xmatch,
+    
+    // Dynamic Array Functions
+    Filter,
+    Sequence,
+    Sort,
+    Sortby,
+    Unique,
+    
+    // Modern Functions
+    Let,
 
     // Text
     Concat,
@@ -1278,6 +1290,17 @@ impl Function {
             "RANK.EQ" | "_XLFN.RANK.EQ" | "РАНГ.РВ" => Some(Function::RankEq),
             "RANK.AVG" | "_XLFN.RANK.AVG" | "РАНГ.СР" => Some(Function::RankAvg),
 
+            // Dynamic Array Functions
+            "FILTER" | "_XLFN.FILTER" | "ФИЛЬТР" => Some(Function::Filter),
+            "SEQUENCE" | "_XLFN.SEQUENCE" | "ПОСЛЕДОВ" => Some(Function::Sequence),
+            "SORT" | "_XLFN.SORT" | "СОРТ" => Some(Function::Sort),
+            "SORTBY" | "_XLFN.SORTBY" | "СОРТПО" => Some(Function::Sortby),
+            "UNIQUE" | "_XLFN.UNIQUE" | "УНИК" => Some(Function::Unique),
+            "XMATCH" | "_XLFN.XMATCH" | "ХПОИСКПОЗ" => Some(Function::Xmatch),
+            
+            // Modern Functions
+            "LET" | "_XLFN.LET" | "ПУСТЬ" => Some(Function::Let),
+
             _ => None,
         }
     }
@@ -1633,6 +1656,17 @@ impl fmt::Display for Function {
             Function::Skew => write!(f, "SKEW"),
             Function::SkewP => write!(f, "SKEW.P"),
             Function::Small => write!(f, "SMALL"),
+            
+            // Dynamic Array Functions
+            Function::Filter => write!(f, "FILTER"),
+            Function::Sequence => write!(f, "SEQUENCE"),
+            Function::Sort => write!(f, "SORT"),
+            Function::Sortby => write!(f, "SORTBY"),
+            Function::Unique => write!(f, "UNIQUE"),
+            Function::Xmatch => write!(f, "XMATCH"),
+            
+            // Modern Functions
+            Function::Let => write!(f, "LET"),
         }
     }
 }
@@ -2007,6 +2041,17 @@ impl Model {
             Function::Skew => self.fn_skew(args, cell),
             Function::SkewP => self.fn_skew_p(args, cell),
             Function::Small => self.fn_small(args, cell),
+            
+            // Dynamic Array Functions
+            Function::Filter => self.fn_filter(args, cell),
+            Function::Sequence => self.fn_sequence(args, cell),
+            Function::Sort => self.fn_sort(args, cell),
+            Function::Sortby => self.fn_sortby(args, cell),
+            Function::Unique => self.fn_unique(args, cell),
+            Function::Xmatch => self.fn_xmatch(args, cell),
+            
+            // Modern Functions
+            Function::Let => self.fn_let(args, cell),
         }
     }
 }

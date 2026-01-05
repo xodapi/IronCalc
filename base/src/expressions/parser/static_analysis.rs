@@ -1010,6 +1010,17 @@ fn get_function_args_signature(kind: &Function, arg_count: usize) -> Vec<Signatu
         Function::Skew => vec![Signature::Vector; arg_count],
         Function::SkewP => vec![Signature::Vector; arg_count],
         Function::Small => vec![Signature::Vector, Signature::Scalar],
+        
+        // Dynamic Array Functions
+        Function::Filter => vec![Signature::Vector, Signature::Vector, Signature::Scalar],
+        Function::Sequence => vec![Signature::Scalar; arg_count],
+        Function::Sort => vec![Signature::Vector, Signature::Scalar, Signature::Scalar, Signature::Scalar],
+        Function::Sortby => vec![Signature::Vector; arg_count],
+        Function::Unique => vec![Signature::Vector, Signature::Scalar, Signature::Scalar],
+        Function::Xmatch => vec![Signature::Scalar, Signature::Vector, Signature::Scalar, Signature::Scalar],
+        
+        // Modern Functions
+        Function::Let => vec![Signature::Scalar; arg_count],
     }
 }
 
@@ -1362,5 +1373,15 @@ fn static_analysis_on_function(kind: &Function, args: &[Node]) -> StaticResult {
         Function::Skew => StaticResult::Scalar,
         Function::SkewP => StaticResult::Scalar,
         Function::Small => StaticResult::Scalar,
+        // Dynamic Array Functions - return arrays (dynamic size)
+        Function::Filter => StaticResult::Unknown,
+        Function::Sequence => StaticResult::Unknown,
+        Function::Sort => StaticResult::Unknown,
+        Function::Sortby => StaticResult::Unknown,
+        Function::Unique => StaticResult::Unknown,
+        Function::Xmatch => StaticResult::Scalar,
+        
+        // Modern Functions
+        Function::Let => StaticResult::Unknown,
     }
 }
