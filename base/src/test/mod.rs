@@ -98,3 +98,8 @@ mod test_lambda;
 mod test_spilling;
 mod test_bug_fixes;
 mod test_xlookup;
+mod test_filter;
+mod test_unique;
+mod test_sort;
+mod test_sequence;
+mod test_let;
