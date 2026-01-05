@@ -59,7 +59,6 @@ fn test_unique_exactly_once() {
 }
 
 #[test]
-#[ignore] // TODO: by_col parameter not yet implemented
 fn test_unique_by_column() {
     let mut model = new_empty_model();
     // Horizontal data with duplicates

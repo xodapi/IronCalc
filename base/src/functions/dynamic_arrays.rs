@@ -187,13 +187,12 @@ impl Model {
             Err(e) => return e,
         };
 
-        if by_col {
-            return CalcResult::Error {
-                error: Error::NIMPL,
-                origin: cell,
-                message: "UNIQUE: by_col not yet implemented".to_string(),
-            };
-        }
+        // Transpose if by_col is true (work with columns as rows)
+        let array_data = if by_col {
+            Self::transpose_2d(&array_data)
+        } else {
+            array_data
+        };
 
         // Find unique rows
         let mut seen: Vec<Vec<ArrayNode>> = Vec::new();
@@ -225,6 +224,13 @@ impl Model {
                 message: "UNIQUE: no unique values found".to_string(),
             };
         }
+
+        // Transpose result back if by_col
+        let result = if by_col {
+            Self::transpose_2d(&result)
+        } else {
+            result
+        };
 
         CalcResult::Array(result)
     }
@@ -270,13 +276,12 @@ impl Model {
             Err(e) => return e,
         };
 
-        if by_col {
-            return CalcResult::Error {
-                error: Error::NIMPL,
-                origin: cell,
-                message: "SORT: by_col not yet implemented".to_string(),
-            };
-        }
+        // Transpose if by_col is true (work with columns)
+        let mut array_data = if by_col {
+            Self::transpose_2d(&array_data)
+        } else {
+            array_data
+        };
 
         let col_idx = if sort_index > 0 { sort_index - 1 } else { 0 };
 
@@ -288,7 +293,14 @@ impl Model {
             if ascending { cmp } else { cmp.reverse() }
         });
 
-        CalcResult::Array(array_data)
+        // Transpose back if by_col
+        let result = if by_col {
+            Self::transpose_2d(&array_data)
+        } else {
+            array_data
+        };
+
+        CalcResult::Array(result)
     }
 
     /// =SORTBY(array, by_array1, [sort_order1], ...)
@@ -534,5 +546,28 @@ impl Model {
             (Some(ArrayNode::String(_)), Some(ArrayNode::Number(_))) => Ordering::Greater,
             _ => Ordering::Equal,
         }
+    }
+
+    /// Transpose a 2D array (rows become columns and vice versa)
+    fn transpose_2d(data: &[Vec<ArrayNode>]) -> Vec<Vec<ArrayNode>> {
+        if data.is_empty() {
+            return Vec::new();
+        }
+        let rows = data.len();
+        let cols = data.first().map(|r| r.len()).unwrap_or(0);
+        
+        let mut result: Vec<Vec<ArrayNode>> = Vec::with_capacity(cols);
+        for c in 0..cols {
+            let mut new_row: Vec<ArrayNode> = Vec::with_capacity(rows);
+            for r in 0..rows {
+                if let Some(row) = data.get(r) {
+                    if let Some(val) = row.get(c) {
+                        new_row.push(val.clone());
+                    }
+                }
+            }
+            result.push(new_row);
+        }
+        result
     }
 }
