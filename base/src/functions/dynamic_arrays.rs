@@ -331,7 +331,7 @@ impl Model {
             false
         };
 
-        let mut array_data = match self.calc_result_to_2d_array(&array, cell) {
+        let array_data = match self.calc_result_to_2d_array(&array, cell) {
             Ok(data) => data,
             Err(e) => return e,
         };
@@ -372,56 +372,65 @@ impl Model {
     }
 
     /// =LET(name1, value1, [name2, value2, ...], calculation)
+    /// 
+    /// Assigns names to calculation results for reuse within a formula.
+    /// Variable names are parsed as WrongVariableKind nodes by the parser.
     pub(crate) fn fn_let(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
         let arg_count = args.len();
         
-        // LET requires at least 3 arguments and odd number
+        // LET requires at least 3 arguments (name, value, calculation) and odd number
         if arg_count < 3 || arg_count % 2 == 0 {
             return CalcResult::new_args_number_error(cell);
         }
 
+        // Save old scope for proper cleanup (supports nested LET)
+        let old_scope = self.lambda_scope.clone();
+
         // Process name-value pairs
         let num_pairs = (arg_count - 1) / 2;
-        let mut bindings: Vec<(String, CalcResult)> = Vec::with_capacity(num_pairs);
+        let mut bound_names: Vec<String> = Vec::with_capacity(num_pairs);
 
         for i in 0..num_pairs {
             let name_idx = i * 2;
             let value_idx = i * 2 + 1;
 
-            // Get variable name from the node - try to extract string representation
-            let name = match self.get_string(&args[name_idx], cell) {
-                Ok(s) => s,
-                Err(_) => {
-                    // Try evaluating and converting to string
-                    let eval = self.evaluate_node_in_context(&args[name_idx], cell);
-                    match eval {
-                        CalcResult::String(s) => s,
-                        _ => {
-                            return CalcResult::Error {
-                                error: Error::VALUE,
-                                origin: cell,
-                                message: "LET: variable name must be a valid identifier".to_string(),
-                            };
-                        }
-                    }
+            // Extract variable name from WrongVariableKind node
+            // This is the same approach used for LAMBDA parameters
+            let name = match &args[name_idx] {
+                Node::WrongVariableKind(var_name) => var_name.clone(),
+                _ => {
+                    // Restore scope and return error
+                    self.lambda_scope = old_scope;
+                    return CalcResult::Error {
+                        error: Error::VALUE,
+                        origin: cell,
+                        message: format!(
+                            "LET: argument {} must be a valid variable name",
+                            name_idx + 1
+                        ),
+                    };
                 }
             };
 
+            // Evaluate the value expression (may reference previously bound variables)
             let value = self.evaluate_node_in_context(&args[value_idx], cell);
             
+            // Propagate errors immediately
             if let CalcResult::Error { .. } = &value {
+                self.lambda_scope = old_scope;
                 return value;
             }
 
-            self.lambda_scope.insert(name.clone(), value.clone());
-            bindings.push((name, value));
+            // Bind the variable in scope
+            self.lambda_scope.insert(name.clone(), value);
+            bound_names.push(name);
         }
 
+        // Evaluate the final calculation expression
         let result = self.evaluate_node_in_context(&args[arg_count - 1], cell);
 
-        for (name, _) in bindings {
-            self.lambda_scope.remove(&name);
-        }
+        // Restore the original scope
+        self.lambda_scope = old_scope;
 
         result
     }

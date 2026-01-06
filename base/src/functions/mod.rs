@@ -437,7 +437,7 @@ pub enum Function {
 }
 
 impl Function {
-    pub fn into_iter() -> IntoIter<Function, 346> {
+    pub fn into_iter() -> IntoIter<Function, 353> {
         [
             Function::And,
             Function::False,
@@ -785,6 +785,15 @@ impl Function {
             Function::Kurt,
             Function::MaxA,
             Function::MinA,
+            // Dynamic Array Functions
+            Function::Filter,
+            Function::Sequence,
+            Function::Sort,
+            Function::Sortby,
+            Function::Unique,
+            Function::Xmatch,
+            // Modern Functions
+            Function::Let,
         ]
         .into_iter()
     }
