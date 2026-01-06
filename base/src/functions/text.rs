@@ -1387,4 +1387,193 @@ impl Model {
         };
         CalcResult::String(text)
     }
+
+    /// CHAR(number)
+    /// Returns the character specified by the code number (1-255 for ASCII/ANSI)
+    pub(crate) fn fn_char(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        if args.len() != 1 {
+            return CalcResult::new_args_number_error(cell);
+        }
+        let number = match self.get_number(&args[0], cell) {
+            Ok(n) => n,
+            Err(e) => return e,
+        };
+        let code = number.floor() as i64;
+        if code < 1 || code > 255 {
+            return CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "Number must be between 1 and 255".to_string(),
+            };
+        }
+        CalcResult::String((code as u8 as char).to_string())
+    }
+
+    /// CODE(text)
+    /// Returns a numeric code for the first character in a text string (ANSI code)
+    pub(crate) fn fn_code(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        if args.len() != 1 {
+            return CalcResult::new_args_number_error(cell);
+        }
+        let text = match self.get_string(&args[0], cell) {
+            Ok(s) => s,
+            Err(e) => return e,
+        };
+        if text.is_empty() {
+            return CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "Text cannot be empty".to_string(),
+            };
+        }
+        let first_char = text.chars().next().unwrap();
+        // Return ASCII/ANSI code (0-255 range)
+        let code = first_char as u32;
+        if code > 255 {
+            // For non-ASCII, return the Unicode code point (like Excel does for extended chars)
+            CalcResult::Number(code as f64)
+        } else {
+            CalcResult::Number(code as f64)
+        }
+    }
+
+    /// UNICHAR(number)
+    /// Returns the Unicode character referenced by the given numeric value
+    pub(crate) fn fn_unichar(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        if args.len() != 1 {
+            return CalcResult::new_args_number_error(cell);
+        }
+        let number = match self.get_number(&args[0], cell) {
+            Ok(n) => n,
+            Err(e) => return e,
+        };
+        let code = number.floor() as u32;
+        if code < 1 {
+            return CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "Number must be greater than 0".to_string(),
+            };
+        }
+        match char::from_u32(code) {
+            Some(c) => CalcResult::String(c.to_string()),
+            None => CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "Invalid Unicode code point".to_string(),
+            },
+        }
+    }
+
+    /// CLEAN(text)
+    /// Removes all nonprintable characters from text (ASCII codes 0-31)
+    pub(crate) fn fn_clean(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        if args.len() != 1 {
+            return CalcResult::new_args_number_error(cell);
+        }
+        let text = match self.get_string(&args[0], cell) {
+            Ok(s) => s,
+            Err(e) => return e,
+        };
+        // Remove characters with ASCII codes 0-31 (non-printable)
+        let cleaned: String = text
+            .chars()
+            .filter(|c| {
+                let code = *c as u32;
+                code > 31
+            })
+            .collect();
+        CalcResult::String(cleaned)
+    }
+
+    /// PROPER(text)
+    /// Capitalizes the first letter in each word of a text value
+    pub(crate) fn fn_proper(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        if args.len() != 1 {
+            return CalcResult::new_args_number_error(cell);
+        }
+        let text = match self.get_string(&args[0], cell) {
+            Ok(s) => s,
+            Err(e) => return e,
+        };
+        let mut result = String::with_capacity(text.len());
+        let mut capitalize_next = true;
+        for c in text.chars() {
+            if c.is_alphabetic() {
+                if capitalize_next {
+                    result.extend(c.to_uppercase());
+                    capitalize_next = false;
+                } else {
+                    result.extend(c.to_lowercase());
+                }
+            } else {
+                result.push(c);
+                // Non-alphabetic chars trigger capitalization of next letter
+                capitalize_next = !c.is_alphanumeric();
+            }
+        }
+        CalcResult::String(result)
+    }
+
+    /// REPLACE(old_text, start_num, num_chars, new_text)
+    /// Replaces part of a text string with a different text string
+    pub(crate) fn fn_replace(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        if args.len() != 4 {
+            return CalcResult::new_args_number_error(cell);
+        }
+        let old_text = match self.get_string(&args[0], cell) {
+            Ok(s) => s,
+            Err(e) => return e,
+        };
+        let start_num = match self.get_number(&args[1], cell) {
+            Ok(n) => n,
+            Err(e) => return e,
+        };
+        let num_chars = match self.get_number(&args[2], cell) {
+            Ok(n) => n,
+            Err(e) => return e,
+        };
+        let new_text = match self.get_string(&args[3], cell) {
+            Ok(s) => s,
+            Err(e) => return e,
+        };
+
+        let start = start_num.floor() as i64;
+        let count = num_chars.floor() as i64;
+
+        if start < 1 {
+            return CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "Start position must be >= 1".to_string(),
+            };
+        }
+        if count < 0 {
+            return CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "Number of characters must be >= 0".to_string(),
+            };
+        }
+
+        let start = (start - 1) as usize; // Convert to 0-indexed
+        let count = count as usize;
+
+        let chars: Vec<char> = old_text.chars().collect();
+        let mut result = String::new();
+
+        // Add characters before start position
+        for c in chars.iter().take(start.min(chars.len())) {
+            result.push(*c);
+        }
+        // Add new text
+        result.push_str(&new_text);
+        // Add characters after the replaced section
+        let skip_until = start + count;
+        for c in chars.iter().skip(skip_until) {
+            result.push(*c);
+        }
+
+        CalcResult::String(result)
+    }
 }
