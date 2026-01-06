@@ -1024,6 +1024,13 @@ fn get_function_args_signature(kind: &Function, arg_count: usize) -> Vec<Signatu
         Function::Sortby => vec![Signature::Vector; arg_count],
         Function::Unique => vec![Signature::Vector, Signature::Scalar, Signature::Scalar],
         Function::Xmatch => vec![Signature::Scalar, Signature::Vector, Signature::Scalar, Signature::Scalar],
+        Function::Randarray => vec![Signature::Scalar; arg_count],
+        Function::Take => vec![Signature::Vector, Signature::Scalar, Signature::Scalar],
+        Function::Drop => vec![Signature::Vector, Signature::Scalar, Signature::Scalar],
+        Function::Choosecols => vec![Signature::Vector; 1].into_iter().chain(vec![Signature::Scalar; arg_count.saturating_sub(1)]).collect(),
+        Function::Chooserows => vec![Signature::Vector; 1].into_iter().chain(vec![Signature::Scalar; arg_count.saturating_sub(1)]).collect(),
+        Function::Vstack => vec![Signature::Vector; arg_count],
+        Function::Hstack => vec![Signature::Vector; arg_count],
         
         // Modern Functions
         Function::Let => vec![Signature::Scalar; arg_count],
@@ -1392,6 +1399,13 @@ fn static_analysis_on_function(kind: &Function, args: &[Node]) -> StaticResult {
         Function::Sortby => StaticResult::Unknown,
         Function::Unique => StaticResult::Unknown,
         Function::Xmatch => StaticResult::Scalar,
+        Function::Randarray => StaticResult::Unknown,
+        Function::Take => StaticResult::Unknown,
+        Function::Drop => StaticResult::Unknown,
+        Function::Choosecols => StaticResult::Unknown,
+        Function::Chooserows => StaticResult::Unknown,
+        Function::Vstack => StaticResult::Unknown,
+        Function::Hstack => StaticResult::Unknown,
         
         // Modern Functions
         Function::Let => StaticResult::Unknown,

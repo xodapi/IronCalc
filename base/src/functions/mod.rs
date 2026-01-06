@@ -165,6 +165,13 @@ pub enum Function {
     Sort,
     Sortby,
     Unique,
+    Randarray,
+    Take,
+    Drop,
+    Choosecols,
+    Chooserows,
+    Vstack,
+    Hstack,
     
     // Modern Functions
     Let,
@@ -443,7 +450,7 @@ pub enum Function {
 }
 
 impl Function {
-    pub fn into_iter() -> IntoIter<Function, 359> {
+    pub fn into_iter() -> IntoIter<Function, 366> {
         [
             Function::And,
             Function::False,
@@ -804,6 +811,13 @@ impl Function {
             Function::Sortby,
             Function::Unique,
             Function::Xmatch,
+            Function::Randarray,
+            Function::Take,
+            Function::Drop,
+            Function::Choosecols,
+            Function::Chooserows,
+            Function::Vstack,
+            Function::Hstack,
             // Modern Functions
             Function::Let,
         ]
@@ -933,6 +947,15 @@ impl Function {
             Function::SkewP => "_xlfn.SKEW.P".to_string(),
             Function::RankAvg => "_xlfn.RANK.AVG".to_string(),
             Function::RankEq => "_xlfn.RANK.EQ".to_string(),
+            
+            // Dynamic Array Functions (2022+)
+            Function::Randarray => "_xlfn.RANDARRAY".to_string(),
+            Function::Take => "_xlfn.TAKE".to_string(),
+            Function::Drop => "_xlfn.DROP".to_string(),
+            Function::Choosecols => "_xlfn.CHOOSECOLS".to_string(),
+            Function::Chooserows => "_xlfn.CHOOSEROWS".to_string(),
+            Function::Vstack => "_xlfn.VSTACK".to_string(),
+            Function::Hstack => "_xlfn.HSTACK".to_string(),
 
             _ => self.to_string(),
         }
@@ -1325,6 +1348,13 @@ impl Function {
             "SORTBY" | "_XLFN.SORTBY" | "СОРТПО" => Some(Function::Sortby),
             "UNIQUE" | "_XLFN.UNIQUE" | "УНИК" => Some(Function::Unique),
             "XMATCH" | "_XLFN.XMATCH" | "ХПОИСКПОЗ" => Some(Function::Xmatch),
+            "RANDARRAY" | "_XLFN.RANDARRAY" | "СЛУЧМАССИВ" => Some(Function::Randarray),
+            "TAKE" | "_XLFN.TAKE" | "ВЗЯТЬ" => Some(Function::Take),
+            "DROP" | "_XLFN.DROP" | "УДАЛИТЬ" => Some(Function::Drop),
+            "CHOOSECOLS" | "_XLFN.CHOOSECOLS" | "ВЫБРАТЬСТОЛБЦЫ" => Some(Function::Choosecols),
+            "CHOOSEROWS" | "_XLFN.CHOOSEROWS" | "ВЫБРАТЬСТРОКИ" => Some(Function::Chooserows),
+            "VSTACK" | "_XLFN.VSTACK" | "ВСТЭК" => Some(Function::Vstack),
+            "HSTACK" | "_XLFN.HSTACK" | "ГСТЭК" => Some(Function::Hstack),
             
             // Modern Functions
             "LET" | "_XLFN.LET" | "ПУСТЬ" => Some(Function::Let),
@@ -1698,6 +1728,13 @@ impl fmt::Display for Function {
             Function::Sortby => write!(f, "SORTBY"),
             Function::Unique => write!(f, "UNIQUE"),
             Function::Xmatch => write!(f, "XMATCH"),
+            Function::Randarray => write!(f, "RANDARRAY"),
+            Function::Take => write!(f, "TAKE"),
+            Function::Drop => write!(f, "DROP"),
+            Function::Choosecols => write!(f, "CHOOSECOLS"),
+            Function::Chooserows => write!(f, "CHOOSEROWS"),
+            Function::Vstack => write!(f, "VSTACK"),
+            Function::Hstack => write!(f, "HSTACK"),
             
             // Modern Functions
             Function::Let => write!(f, "LET"),
@@ -2089,6 +2126,13 @@ impl Model {
             Function::Sortby => self.fn_sortby(args, cell),
             Function::Unique => self.fn_unique(args, cell),
             Function::Xmatch => self.fn_xmatch(args, cell),
+            Function::Randarray => self.fn_randarray(args, cell),
+            Function::Take => self.fn_take(args, cell),
+            Function::Drop => self.fn_drop(args, cell),
+            Function::Choosecols => self.fn_choosecols(args, cell),
+            Function::Chooserows => self.fn_chooserows(args, cell),
+            Function::Vstack => self.fn_vstack(args, cell),
+            Function::Hstack => self.fn_hstack(args, cell),
             
             // Modern Functions
             Function::Let => self.fn_let(args, cell),

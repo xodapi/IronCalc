@@ -639,4 +639,475 @@ impl Model {
         }
         result
     }
+
+    /// =RANDARRAY([rows], [columns], [min], [max], [whole_number])
+    /// Generates an array of random numbers
+    pub(crate) fn fn_randarray(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        let arg_count = args.len();
+        if arg_count > 5 {
+            return CalcResult::new_args_number_error(cell);
+        }
+
+        // Get rows (default 1)
+        let rows = if arg_count >= 1 {
+            match self.get_number(&args[0], cell) {
+                Ok(v) => v as i32,
+                Err(e) => return e,
+            }
+        } else {
+            1
+        };
+        if rows < 1 {
+            return CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "RANDARRAY: rows must be >= 1".to_string(),
+            };
+        }
+
+        // Get columns (default 1)
+        let columns = if arg_count >= 2 {
+            match self.get_number(&args[1], cell) {
+                Ok(v) => v as i32,
+                Err(e) => return e,
+            }
+        } else {
+            1
+        };
+        if columns < 1 {
+            return CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "RANDARRAY: columns must be >= 1".to_string(),
+            };
+        }
+
+        // Get min (default 0)
+        let min = if arg_count >= 3 {
+            match self.get_number(&args[2], cell) {
+                Ok(v) => v,
+                Err(e) => return e,
+            }
+        } else {
+            0.0
+        };
+
+        // Get max (default 1)
+        let max = if arg_count >= 4 {
+            match self.get_number(&args[3], cell) {
+                Ok(v) => v,
+                Err(e) => return e,
+            }
+        } else {
+            1.0
+        };
+
+        if min > max {
+            return CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "RANDARRAY: min must be <= max".to_string(),
+            };
+        }
+
+        // Get whole_number (default false)
+        let whole_number = if arg_count >= 5 {
+            match self.get_boolean(&args[4], cell) {
+                Ok(v) => v,
+                Err(e) => return e,
+            }
+        } else {
+            false
+        };
+
+        // Generate the array
+        let mut result = Vec::with_capacity(rows as usize);
+        let range = max - min;
+
+        for _row in 0..rows {
+            let mut row_data = Vec::with_capacity(columns as usize);
+            for _col in 0..columns {
+                let rand_value = rand::random::<f64>(); // 0.0 to 1.0
+                let value = if whole_number {
+                    (min + rand_value * (range + 1.0)).floor()
+                } else {
+                    min + rand_value * range
+                };
+                row_data.push(ArrayNode::Number(value));
+            }
+            result.push(row_data);
+        }
+
+        CalcResult::Array(result)
+    }
+
+    /// =TAKE(array, rows, [columns])
+    /// Returns a specified number of contiguous rows or columns from the start or end of an array
+    pub(crate) fn fn_take(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        let arg_count = args.len();
+        if arg_count < 2 || arg_count > 3 {
+            return CalcResult::new_args_number_error(cell);
+        }
+
+        // Get the source array
+        let source = self.evaluate_node_in_context(&args[0], cell);
+        let data = match self.calc_result_to_2d_array(&source, cell) {
+            Ok(d) => d,
+            Err(e) => return e,
+        };
+
+        if data.is_empty() {
+            return CalcResult::Array(vec![]);
+        }
+
+        let total_rows = data.len() as i32;
+        let total_cols = data.first().map(|r| r.len()).unwrap_or(0) as i32;
+
+        // Get rows to take (positive = from start, negative = from end)
+        let take_rows = match self.get_number(&args[1], cell) {
+            Ok(v) => v as i32,
+            Err(e) => return e,
+        };
+
+        // Get columns to take (optional, default = all)
+        let take_cols = if arg_count >= 3 {
+            match self.get_number(&args[2], cell) {
+                Ok(v) => v as i32,
+                Err(e) => return e,
+            }
+        } else {
+            total_cols // Take all columns by default
+        };
+
+        // Calculate row range
+        let (row_start, row_end) = if take_rows >= 0 {
+            (0, (take_rows.min(total_rows)) as usize)
+        } else {
+            let start = (total_rows + take_rows).max(0) as usize;
+            (start, total_rows as usize)
+        };
+
+        // Calculate column range
+        let (col_start, col_end) = if take_cols >= 0 {
+            (0, (take_cols.min(total_cols)) as usize)
+        } else {
+            let start = (total_cols + take_cols).max(0) as usize;
+            (start, total_cols as usize)
+        };
+
+        // Build result
+        let mut result = Vec::new();
+        for row_idx in row_start..row_end {
+            if let Some(row) = data.get(row_idx) {
+                let new_row: Vec<ArrayNode> = row[col_start..col_end.min(row.len())].to_vec();
+                result.push(new_row);
+            }
+        }
+
+        if result.is_empty() {
+            CalcResult::Error {
+                error: Error::CALC,
+                origin: cell,
+                message: "TAKE: No data to return".to_string(),
+            }
+        } else {
+            CalcResult::Array(result)
+        }
+    }
+
+    /// =DROP(array, rows, [columns])
+    /// Excludes a specified number of rows or columns from the start or end of an array
+    pub(crate) fn fn_drop(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        let arg_count = args.len();
+        if arg_count < 2 || arg_count > 3 {
+            return CalcResult::new_args_number_error(cell);
+        }
+
+        // Get the source array
+        let source = self.evaluate_node_in_context(&args[0], cell);
+        let data = match self.calc_result_to_2d_array(&source, cell) {
+            Ok(d) => d,
+            Err(e) => return e,
+        };
+
+        if data.is_empty() {
+            return CalcResult::Array(vec![]);
+        }
+
+        let total_rows = data.len() as i32;
+        let total_cols = data.first().map(|r| r.len()).unwrap_or(0) as i32;
+
+        // Get rows to drop (positive = from start, negative = from end)
+        let drop_rows = match self.get_number(&args[1], cell) {
+            Ok(v) => v as i32,
+            Err(e) => return e,
+        };
+
+        // Get columns to drop (optional, default = 0)
+        let drop_cols = if arg_count >= 3 {
+            match self.get_number(&args[2], cell) {
+                Ok(v) => v as i32,
+                Err(e) => return e,
+            }
+        } else {
+            0
+        };
+
+        // Calculate row range (opposite of TAKE)
+        let (row_start, row_end) = if drop_rows >= 0 {
+            (drop_rows.min(total_rows) as usize, total_rows as usize)
+        } else {
+            (0, (total_rows + drop_rows).max(0) as usize)
+        };
+
+        // Calculate column range
+        let (col_start, col_end) = if drop_cols >= 0 {
+            (drop_cols.min(total_cols) as usize, total_cols as usize)
+        } else {
+            (0, (total_cols + drop_cols).max(0) as usize)
+        };
+
+        // Build result
+        let mut result = Vec::new();
+        for row_idx in row_start..row_end {
+            if let Some(row) = data.get(row_idx) {
+                let new_row: Vec<ArrayNode> = row[col_start..col_end.min(row.len())].to_vec();
+                result.push(new_row);
+            }
+        }
+
+        if result.is_empty() {
+            CalcResult::Error {
+                error: Error::CALC,
+                origin: cell,
+                message: "DROP: No data remaining".to_string(),
+            }
+        } else {
+            CalcResult::Array(result)
+        }
+    }
+
+    /// =CHOOSECOLS(array, col_num1, [col_num2], ...)
+    /// Returns the specified columns from an array
+    pub(crate) fn fn_choosecols(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        if args.len() < 2 {
+            return CalcResult::new_args_number_error(cell);
+        }
+
+        // Get the source array
+        let source = self.evaluate_node_in_context(&args[0], cell);
+        let data = match self.calc_result_to_2d_array(&source, cell) {
+            Ok(d) => d,
+            Err(e) => return e,
+        };
+
+        if data.is_empty() {
+            return CalcResult::Array(vec![]);
+        }
+
+        let total_cols = data.first().map(|r| r.len()).unwrap_or(0) as i32;
+
+        // Collect column indices
+        let mut col_indices = Vec::new();
+        for arg in args.iter().skip(1) {
+            let col_num = match self.get_number(arg, cell) {
+                Ok(v) => v as i32,
+                Err(e) => return e,
+            };
+            
+            // Convert to 0-indexed (positive = from start, negative = from end)
+            let idx = if col_num > 0 {
+                col_num - 1
+            } else if col_num < 0 {
+                total_cols + col_num
+            } else {
+                return CalcResult::Error {
+                    error: Error::VALUE,
+                    origin: cell,
+                    message: "CHOOSECOLS: Column number cannot be 0".to_string(),
+                };
+            };
+            
+            if idx < 0 || idx >= total_cols {
+                return CalcResult::Error {
+                    error: Error::VALUE,
+                    origin: cell,
+                    message: format!("CHOOSECOLS: Column {} is out of range", col_num),
+                };
+            }
+            col_indices.push(idx as usize);
+        }
+
+        // Build result
+        let mut result = Vec::new();
+        for row in &data {
+            let new_row: Vec<ArrayNode> = col_indices
+                .iter()
+                .filter_map(|&idx| row.get(idx).cloned())
+                .collect();
+            result.push(new_row);
+        }
+
+        CalcResult::Array(result)
+    }
+
+    /// =CHOOSEROWS(array, row_num1, [row_num2], ...)
+    /// Returns the specified rows from an array
+    pub(crate) fn fn_chooserows(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        if args.len() < 2 {
+            return CalcResult::new_args_number_error(cell);
+        }
+
+        // Get the source array
+        let source = self.evaluate_node_in_context(&args[0], cell);
+        let data = match self.calc_result_to_2d_array(&source, cell) {
+            Ok(d) => d,
+            Err(e) => return e,
+        };
+
+        if data.is_empty() {
+            return CalcResult::Array(vec![]);
+        }
+
+        let total_rows = data.len() as i32;
+
+        // Collect row indices
+        let mut row_indices = Vec::new();
+        for arg in args.iter().skip(1) {
+            let row_num = match self.get_number(arg, cell) {
+                Ok(v) => v as i32,
+                Err(e) => return e,
+            };
+            
+            // Convert to 0-indexed (positive = from start, negative = from end)
+            let idx = if row_num > 0 {
+                row_num - 1
+            } else if row_num < 0 {
+                total_rows + row_num
+            } else {
+                return CalcResult::Error {
+                    error: Error::VALUE,
+                    origin: cell,
+                    message: "CHOOSEROWS: Row number cannot be 0".to_string(),
+                };
+            };
+            
+            if idx < 0 || idx >= total_rows {
+                return CalcResult::Error {
+                    error: Error::VALUE,
+                    origin: cell,
+                    message: format!("CHOOSEROWS: Row {} is out of range", row_num),
+                };
+            }
+            row_indices.push(idx as usize);
+        }
+
+        // Build result
+        let result: Vec<Vec<ArrayNode>> = row_indices
+            .iter()
+            .filter_map(|&idx| data.get(idx).cloned())
+            .collect();
+
+        CalcResult::Array(result)
+    }
+
+    /// =VSTACK(array1, [array2], ...)
+    /// Appends arrays vertically (stacks rows)
+    pub(crate) fn fn_vstack(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        if args.is_empty() {
+            return CalcResult::new_args_number_error(cell);
+        }
+
+        let mut result: Vec<Vec<ArrayNode>> = Vec::new();
+        let mut max_cols = 0;
+
+        // First pass: collect all arrays and find max columns
+        let mut arrays: Vec<Vec<Vec<ArrayNode>>> = Vec::new();
+        for arg in args {
+            let source = self.evaluate_node_in_context(arg, cell);
+            let data = match self.calc_result_to_2d_array(&source, cell) {
+                Ok(d) => d,
+                Err(e) => return e,
+            };
+            if !data.is_empty() {
+                let cols = data.first().map(|r| r.len()).unwrap_or(0);
+                max_cols = max_cols.max(cols);
+                arrays.push(data);
+            }
+        }
+
+        // Second pass: stack with padding
+        for data in arrays {
+            for row in data {
+                let mut new_row = row.clone();
+                // Pad to max_cols with empty values
+                while new_row.len() < max_cols {
+                    new_row.push(ArrayNode::String(String::new()));
+                }
+                result.push(new_row);
+            }
+        }
+
+        if result.is_empty() {
+            CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "VSTACK: No arrays to stack".to_string(),
+            }
+        } else {
+            CalcResult::Array(result)
+        }
+    }
+
+    /// =HSTACK(array1, [array2], ...)
+    /// Appends arrays horizontally (stacks columns)
+    pub(crate) fn fn_hstack(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        if args.is_empty() {
+            return CalcResult::new_args_number_error(cell);
+        }
+
+        // Collect all arrays and find max rows
+        let mut arrays: Vec<Vec<Vec<ArrayNode>>> = Vec::new();
+        let mut max_rows = 0;
+
+        for arg in args {
+            let source = self.evaluate_node_in_context(arg, cell);
+            let data = match self.calc_result_to_2d_array(&source, cell) {
+                Ok(d) => d,
+                Err(e) => return e,
+            };
+            if !data.is_empty() {
+                max_rows = max_rows.max(data.len());
+                arrays.push(data);
+            }
+        }
+
+        if arrays.is_empty() {
+            return CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "HSTACK: No arrays to stack".to_string(),
+            };
+        }
+
+        // Build result by combining columns
+        let mut result: Vec<Vec<ArrayNode>> = Vec::new();
+        for row_idx in 0..max_rows {
+            let mut new_row: Vec<ArrayNode> = Vec::new();
+            for data in &arrays {
+                if let Some(row) = data.get(row_idx) {
+                    new_row.extend(row.clone());
+                } else {
+                    // Pad with empty values for missing rows
+                    let cols = data.first().map(|r| r.len()).unwrap_or(0);
+                    for _ in 0..cols {
+                        new_row.push(ArrayNode::String(String::new()));
+                    }
+                }
+            }
+            result.push(new_row);
+        }
+
+        CalcResult::Array(result)
+    }
 }
