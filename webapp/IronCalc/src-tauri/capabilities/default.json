@@ -1,0 +1,12 @@
+{
+    "$schema": "https://schema.tauri.app/config/2/capabilities",
+    "identifier": "default",
+    "description": "Default capabilities for IronCalc Desktop",
+    "windows": [
+        "main"
+    ],
+    "permissions": [
+        "core:default",
+        "shell:allow-open"
+    ]
+}

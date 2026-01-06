@@ -12,6 +12,7 @@ members = [
 exclude = [
   "generate_locale",
   "webapp/app.ironcalc.com/server",
+  "webapp/IronCalc/src-tauri",
 ]
 
 [profile.release]

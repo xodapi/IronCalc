@@ -12,7 +12,7 @@ use crate::{
         parser::{
             move_formula::{move_formula, MoveContext},
             stringify::{rename_defined_name_in_node, to_rc_format, to_string},
-            Node, Parser,
+            Node, Parser, ArrayNode,
         },
         token::{get_error_by_name, Error, OpCompare, OpProduct, OpSum, OpUnary},
         types::*,
@@ -439,6 +439,73 @@ impl Model {
                 if r.is_error() {
                     return r;
                 }
+                
+                // Array broadcasting: Range op Scalar -> Array of booleans
+                if let CalcResult::Range { left: r_left, right: r_right } = &l {
+                    // Left is a Range, apply comparison element-wise
+                    let sheet = r_left.sheet;
+                    let min_row = r_left.row.min(r_right.row);
+                    let max_row = r_left.row.max(r_right.row);
+                    let min_col = r_left.column.min(r_right.column);
+                    let max_col = r_left.column.max(r_right.column);
+                    
+                    let mut result_rows: Vec<Vec<ArrayNode>> = Vec::new();
+                    
+                    for row in min_row..=max_row {
+                        let mut result_cols: Vec<ArrayNode> = Vec::new();
+                        for col in min_col..=max_col {
+                            let cell_ref = CellReferenceIndex { sheet, row, column: col };
+                            let cell_value = self.evaluate_cell(cell_ref);
+                            let compare = compare_values(&cell_value, &r);
+                            let bool_result = match kind {
+                                OpCompare::Equal => compare == 0,
+                                OpCompare::LessThan => compare == -1,
+                                OpCompare::GreaterThan => compare == 1,
+                                OpCompare::LessOrEqualThan => compare < 1,
+                                OpCompare::GreaterOrEqualThan => compare > -1,
+                                OpCompare::NonEqual => compare != 0,
+                            };
+                            result_cols.push(ArrayNode::Boolean(bool_result));
+                        }
+                        result_rows.push(result_cols);
+                    }
+                    
+                    return CalcResult::Array(result_rows);
+                }
+                
+                // Right is a Range (swap logic)
+                if let CalcResult::Range { left: r_left, right: r_right } = &r {
+                    let sheet = r_left.sheet;
+                    let min_row = r_left.row.min(r_right.row);
+                    let max_row = r_left.row.max(r_right.row);
+                    let min_col = r_left.column.min(r_right.column);
+                    let max_col = r_left.column.max(r_right.column);
+                    
+                    let mut result_rows: Vec<Vec<ArrayNode>> = Vec::new();
+                    
+                    for row in min_row..=max_row {
+                        let mut result_cols: Vec<ArrayNode> = Vec::new();
+                        for col in min_col..=max_col {
+                            let cell_ref = CellReferenceIndex { sheet, row, column: col };
+                            let cell_value = self.evaluate_cell(cell_ref);
+                            let compare = compare_values(&l, &cell_value);
+                            let bool_result = match kind {
+                                OpCompare::Equal => compare == 0,
+                                OpCompare::LessThan => compare == -1,
+                                OpCompare::GreaterThan => compare == 1,
+                                OpCompare::LessOrEqualThan => compare < 1,
+                                OpCompare::GreaterOrEqualThan => compare > -1,
+                                OpCompare::NonEqual => compare != 0,
+                            };
+                            result_cols.push(ArrayNode::Boolean(bool_result));
+                        }
+                        result_rows.push(result_cols);
+                    }
+                    
+                    return CalcResult::Array(result_rows);
+                }
+                
+                // Normal scalar comparison
                 let compare = compare_values(&l, &r);
                 match kind {
                     OpCompare::Equal => {

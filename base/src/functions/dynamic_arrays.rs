@@ -100,7 +100,7 @@ impl Model {
             None
         };
 
-        // Convert to 2D arrays using helper
+        // Convert to 2D arrays
         let array_data: Vec<Vec<ArrayNode>> = match self.calc_result_to_2d_array(&array, cell) {
             Ok(data) => data,
             Err(e) => return e,
@@ -111,44 +111,97 @@ impl Model {
             Err(e) => return e,
         };
 
-        // Check dimensions match
-        if array_data.len() != include_data.len() {
-            return CalcResult::Error {
-                error: Error::VALUE,
-                origin: cell,
-                message: "FILTER: array and include dimensions must match".to_string(),
+        if array_data.is_empty() {
+            return if let Some(empty_val) = if_empty {
+                empty_val
+            } else {
+                CalcResult::Error {
+                    error: Error::CALC,
+                    origin: cell,
+                    message: "FILTER: no matches found".to_string(),
+                }
             };
         }
 
-        // Filter rows
-        let mut result: Vec<Vec<ArrayNode>> = Vec::new();
-        for (row_idx, row) in array_data.iter().enumerate() {
-            let inc_row: &Vec<ArrayNode> = match include_data.get(row_idx) {
-                Some(r) => r,
-                None => continue,
-            };
-            let should_include: bool = match inc_row.first() {
-                Some(ArrayNode::Boolean(b)) => *b,
-                Some(ArrayNode::Number(n)) => *n != 0.0,
-                _ => false,
-            };
+        let array_rows = array_data.len();
+        let array_cols = array_data.first().map(|r| r.len()).unwrap_or(0);
+        let include_rows = include_data.len();
+        let include_cols = include_data.first().map(|r| r.len()).unwrap_or(0);
 
-            if should_include {
-                result.push(row.clone());
+        // Determine filter direction: by rows or by columns
+        // If include has same number of rows as array -> filter rows
+        // If include has same number of cols as array -> filter columns
+        let filter_by_rows: bool;
+        
+        if include_rows == array_rows && include_cols == 1 {
+            filter_by_rows = true;
+        } else if include_cols == array_cols && include_rows == 1 {
+            filter_by_rows = false;
+        } else if include_rows == array_rows {
+            filter_by_rows = true;
+        } else if include_cols == array_cols {
+            filter_by_rows = false;
+        } else {
+            return CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "FILTER: include dimensions must match array".to_string(),
+            };
+        }
+
+        let mut result: Vec<Vec<ArrayNode>> = Vec::new();
+
+        if filter_by_rows {
+            // Filter rows: include_data should have same # of rows
+            for (row_idx, row) in array_data.iter().enumerate() {
+                let should_include = if let Some(inc_row) = include_data.get(row_idx) {
+                    match inc_row.first() {
+                        Some(ArrayNode::Boolean(b)) => *b,
+                        Some(ArrayNode::Number(n)) => *n != 0.0,
+                        _ => false,
+                    }
+                } else {
+                    false
+                };
+                if should_include {
+                    result.push(row.clone());
+                }
+            }
+        } else {
+            // Filter columns: include_data[0] should have same # of cols
+            let empty_vec: Vec<ArrayNode> = Vec::new();
+            let include_row = include_data.first().unwrap_or(&empty_vec);
+            
+            // Initialize result rows
+            for row in &array_data {
+                let mut filtered_row: Vec<ArrayNode> = Vec::new();
+                for (col_idx, val) in row.iter().enumerate() {
+                    let should_include = match include_row.get(col_idx) {
+                        Some(ArrayNode::Boolean(b)) => *b,
+                        Some(ArrayNode::Number(n)) => *n != 0.0,
+                        _ => false,
+                    };
+                    if should_include {
+                        filtered_row.push(val.clone());
+                    }
+                }
+                if !filtered_row.is_empty() {
+                    result.push(filtered_row);
+                }
             }
         }
 
         // Return if_empty if no matches
-        if result.is_empty() {
-            if let Some(empty_val) = if_empty {
-                return empty_val;
+        if result.is_empty() || (result.len() == 1 && result[0].is_empty()) {
+            return if let Some(empty_val) = if_empty {
+                empty_val
             } else {
-                return CalcResult::Error {
+                CalcResult::Error {
                     error: Error::CALC,
                     origin: cell,
                     message: "FILTER: no matches found".to_string(),
-                };
-            }
+                }
+            };
         }
 
         CalcResult::Array(result)
