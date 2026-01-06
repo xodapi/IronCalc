@@ -1031,6 +1031,10 @@ fn get_function_args_signature(kind: &Function, arg_count: usize) -> Vec<Signatu
         Function::Chooserows => vec![Signature::Vector; 1].into_iter().chain(vec![Signature::Scalar; arg_count.saturating_sub(1)]).collect(),
         Function::Vstack => vec![Signature::Vector; arg_count],
         Function::Hstack => vec![Signature::Vector; arg_count],
+        Function::Wraprows => vec![Signature::Vector, Signature::Scalar, Signature::Scalar],
+        Function::Wrapcols => vec![Signature::Vector, Signature::Scalar, Signature::Scalar],
+        Function::Expand => vec![Signature::Vector, Signature::Scalar, Signature::Scalar, Signature::Scalar],
+        Function::Textsplit => vec![Signature::Scalar; arg_count],
         
         // Modern Functions
         Function::Let => vec![Signature::Scalar; arg_count],
@@ -1406,6 +1410,10 @@ fn static_analysis_on_function(kind: &Function, args: &[Node]) -> StaticResult {
         Function::Chooserows => StaticResult::Unknown,
         Function::Vstack => StaticResult::Unknown,
         Function::Hstack => StaticResult::Unknown,
+        Function::Wraprows => StaticResult::Unknown,
+        Function::Wrapcols => StaticResult::Unknown,
+        Function::Expand => StaticResult::Unknown,
+        Function::Textsplit => StaticResult::Unknown,
         
         // Modern Functions
         Function::Let => StaticResult::Unknown,

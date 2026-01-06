@@ -172,6 +172,10 @@ pub enum Function {
     Chooserows,
     Vstack,
     Hstack,
+    Wraprows,
+    Wrapcols,
+    Expand,
+    Textsplit,
     
     // Modern Functions
     Let,
@@ -450,7 +454,7 @@ pub enum Function {
 }
 
 impl Function {
-    pub fn into_iter() -> IntoIter<Function, 366> {
+    pub fn into_iter() -> IntoIter<Function, 370> {
         [
             Function::And,
             Function::False,
@@ -818,6 +822,10 @@ impl Function {
             Function::Chooserows,
             Function::Vstack,
             Function::Hstack,
+            Function::Wraprows,
+            Function::Wrapcols,
+            Function::Expand,
+            Function::Textsplit,
             // Modern Functions
             Function::Let,
         ]
@@ -956,6 +964,10 @@ impl Function {
             Function::Chooserows => "_xlfn.CHOOSEROWS".to_string(),
             Function::Vstack => "_xlfn.VSTACK".to_string(),
             Function::Hstack => "_xlfn.HSTACK".to_string(),
+            Function::Wraprows => "_xlfn.WRAPROWS".to_string(),
+            Function::Wrapcols => "_xlfn.WRAPCOLS".to_string(),
+            Function::Expand => "_xlfn.EXPAND".to_string(),
+            Function::Textsplit => "_xlfn.TEXTSPLIT".to_string(),
 
             _ => self.to_string(),
         }
@@ -1355,6 +1367,10 @@ impl Function {
             "CHOOSEROWS" | "_XLFN.CHOOSEROWS" | "ВЫБРАТЬСТРОКИ" => Some(Function::Chooserows),
             "VSTACK" | "_XLFN.VSTACK" | "ВСТЭК" => Some(Function::Vstack),
             "HSTACK" | "_XLFN.HSTACK" | "ГСТЭК" => Some(Function::Hstack),
+            "WRAPROWS" | "_XLFN.WRAPROWS" | "СТРПОСТРОКАМ" => Some(Function::Wraprows),
+            "WRAPCOLS" | "_XLFN.WRAPCOLS" | "СТРПОСТОЛБЦАМ" => Some(Function::Wrapcols),
+            "EXPAND" | "_XLFN.EXPAND" | "РАСШИРИТЬ" => Some(Function::Expand),
+            "TEXTSPLIT" | "_XLFN.TEXTSPLIT" | "ТЕКСТРАЗД" => Some(Function::Textsplit),
             
             // Modern Functions
             "LET" | "_XLFN.LET" | "ПУСТЬ" => Some(Function::Let),
@@ -1735,6 +1751,10 @@ impl fmt::Display for Function {
             Function::Chooserows => write!(f, "CHOOSEROWS"),
             Function::Vstack => write!(f, "VSTACK"),
             Function::Hstack => write!(f, "HSTACK"),
+            Function::Wraprows => write!(f, "WRAPROWS"),
+            Function::Wrapcols => write!(f, "WRAPCOLS"),
+            Function::Expand => write!(f, "EXPAND"),
+            Function::Textsplit => write!(f, "TEXTSPLIT"),
             
             // Modern Functions
             Function::Let => write!(f, "LET"),
@@ -2133,6 +2153,10 @@ impl Model {
             Function::Chooserows => self.fn_chooserows(args, cell),
             Function::Vstack => self.fn_vstack(args, cell),
             Function::Hstack => self.fn_hstack(args, cell),
+            Function::Wraprows => self.fn_wraprows(args, cell),
+            Function::Wrapcols => self.fn_wrapcols(args, cell),
+            Function::Expand => self.fn_expand(args, cell),
+            Function::Textsplit => self.fn_textsplit(args, cell),
             
             // Modern Functions
             Function::Let => self.fn_let(args, cell),

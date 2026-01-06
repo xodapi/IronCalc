@@ -1110,4 +1110,304 @@ impl Model {
 
         CalcResult::Array(result)
     }
+
+    /// =WRAPROWS(vector, wrap_count, [pad_with])
+    /// Wraps a row of values into a 2D array after a specified number of elements
+    pub(crate) fn fn_wraprows(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        let arg_count = args.len();
+        if arg_count < 2 || arg_count > 3 {
+            return CalcResult::new_args_number_error(cell);
+        }
+
+        // Get the source vector
+        let source = self.evaluate_node_in_context(&args[0], cell);
+        let data = match self.calc_result_to_2d_array(&source, cell) {
+            Ok(d) => d,
+            Err(e) => return e,
+        };
+
+        // Flatten to 1D
+        let flat: Vec<ArrayNode> = data.into_iter().flatten().collect();
+        if flat.is_empty() {
+            return CalcResult::Array(vec![]);
+        }
+
+        // Get wrap count
+        let wrap_count = match self.get_number(&args[1], cell) {
+            Ok(v) => v as usize,
+            Err(e) => return e,
+        };
+        if wrap_count < 1 {
+            return CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "WRAPROWS: wrap_count must be >= 1".to_string(),
+            };
+        }
+
+        // Get pad_with (optional, default #N/A)
+        let pad_with = if arg_count >= 3 {
+            match self.evaluate_node_in_context(&args[2], cell) {
+                CalcResult::Number(n) => ArrayNode::Number(n),
+                CalcResult::String(s) => ArrayNode::String(s),
+                CalcResult::Boolean(b) => ArrayNode::Boolean(b),
+                CalcResult::EmptyCell | CalcResult::EmptyArg => ArrayNode::String(String::new()),
+                _ => ArrayNode::Error(Error::NA),
+            }
+        } else {
+            ArrayNode::Error(Error::NA)
+        };
+
+        // Build result
+        let mut result: Vec<Vec<ArrayNode>> = Vec::new();
+        for chunk in flat.chunks(wrap_count) {
+            let mut row = chunk.to_vec();
+            while row.len() < wrap_count {
+                row.push(pad_with.clone());
+            }
+            result.push(row);
+        }
+
+        CalcResult::Array(result)
+    }
+
+    /// =WRAPCOLS(vector, wrap_count, [pad_with])
+    /// Wraps a column of values into a 2D array after a specified number of elements
+    pub(crate) fn fn_wrapcols(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        let arg_count = args.len();
+        if arg_count < 2 || arg_count > 3 {
+            return CalcResult::new_args_number_error(cell);
+        }
+
+        // Get the source vector
+        let source = self.evaluate_node_in_context(&args[0], cell);
+        let data = match self.calc_result_to_2d_array(&source, cell) {
+            Ok(d) => d,
+            Err(e) => return e,
+        };
+
+        // Flatten to 1D
+        let flat: Vec<ArrayNode> = data.into_iter().flatten().collect();
+        if flat.is_empty() {
+            return CalcResult::Array(vec![]);
+        }
+
+        // Get wrap count (number of rows per column)
+        let wrap_count = match self.get_number(&args[1], cell) {
+            Ok(v) => v as usize,
+            Err(e) => return e,
+        };
+        if wrap_count < 1 {
+            return CalcResult::Error {
+                error: Error::VALUE,
+                origin: cell,
+                message: "WRAPCOLS: wrap_count must be >= 1".to_string(),
+            };
+        }
+
+        // Get pad_with (optional, default #N/A)
+        let pad_with = if arg_count >= 3 {
+            match self.evaluate_node_in_context(&args[2], cell) {
+                CalcResult::Number(n) => ArrayNode::Number(n),
+                CalcResult::String(s) => ArrayNode::String(s),
+                CalcResult::Boolean(b) => ArrayNode::Boolean(b),
+                CalcResult::EmptyCell | CalcResult::EmptyArg => ArrayNode::String(String::new()),
+                _ => ArrayNode::Error(Error::NA),
+            }
+        } else {
+            ArrayNode::Error(Error::NA)
+        };
+
+        // Calculate dimensions
+        let num_cols = (flat.len() + wrap_count - 1) / wrap_count;
+        
+        // Build result (fill column by column)
+        let mut result: Vec<Vec<ArrayNode>> = vec![Vec::with_capacity(num_cols); wrap_count];
+        for (i, item) in flat.iter().enumerate() {
+            let row = i % wrap_count;
+            result[row].push(item.clone());
+        }
+        // Pad incomplete columns
+        for row in &mut result {
+            while row.len() < num_cols {
+                row.push(pad_with.clone());
+            }
+        }
+
+        CalcResult::Array(result)
+    }
+
+    /// =EXPAND(array, rows, [columns], [pad_with])
+    /// Expands or pads an array to specified row and column dimensions
+    pub(crate) fn fn_expand(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        let arg_count = args.len();
+        if arg_count < 2 || arg_count > 4 {
+            return CalcResult::new_args_number_error(cell);
+        }
+
+        // Get the source array
+        let source = self.evaluate_node_in_context(&args[0], cell);
+        let data = match self.calc_result_to_2d_array(&source, cell) {
+            Ok(d) => d,
+            Err(e) => return e,
+        };
+
+        let original_rows = data.len();
+        let original_cols = data.first().map(|r| r.len()).unwrap_or(0);
+
+        // Get target rows
+        let target_rows = match self.get_number(&args[1], cell) {
+            Ok(v) => (v as usize).max(original_rows),
+            Err(e) => return e,
+        };
+
+        // Get target columns (optional, default = original)
+        let target_cols = if arg_count >= 3 {
+            match self.get_number(&args[2], cell) {
+                Ok(v) => (v as usize).max(original_cols),
+                Err(e) => return e,
+            }
+        } else {
+            original_cols
+        };
+
+        // Get pad_with (optional, default #N/A)
+        let pad_with = if arg_count >= 4 {
+            match self.evaluate_node_in_context(&args[3], cell) {
+                CalcResult::Number(n) => ArrayNode::Number(n),
+                CalcResult::String(s) => ArrayNode::String(s),
+                CalcResult::Boolean(b) => ArrayNode::Boolean(b),
+                CalcResult::EmptyCell | CalcResult::EmptyArg => ArrayNode::String(String::new()),
+                _ => ArrayNode::Error(Error::NA),
+            }
+        } else {
+            ArrayNode::Error(Error::NA)
+        };
+
+        // Build result
+        let mut result: Vec<Vec<ArrayNode>> = Vec::with_capacity(target_rows);
+        for row_idx in 0..target_rows {
+            let mut row = Vec::with_capacity(target_cols);
+            for col_idx in 0..target_cols {
+                if row_idx < original_rows && col_idx < original_cols {
+                    if let Some(src_row) = data.get(row_idx) {
+                        if let Some(val) = src_row.get(col_idx) {
+                            row.push(val.clone());
+                            continue;
+                        }
+                    }
+                }
+                row.push(pad_with.clone());
+            }
+            result.push(row);
+        }
+
+        CalcResult::Array(result)
+    }
+
+    /// =TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty], [match_mode], [pad_with])
+    /// Splits text into rows and/or columns using specified delimiters
+    pub(crate) fn fn_textsplit(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {
+        let arg_count = args.len();
+        if arg_count < 2 || arg_count > 6 {
+            return CalcResult::new_args_number_error(cell);
+        }
+
+        // Get the text to split
+        let text = match self.get_string(&args[0], cell) {
+            Ok(s) => s,
+            Err(e) => return e,
+        };
+
+        // Get column delimiter
+        let col_delim = match self.get_string(&args[1], cell) {
+            Ok(s) => s,
+            Err(e) => return e,
+        };
+
+        // Get row delimiter (optional)
+        let row_delim = if arg_count >= 3 {
+            match self.evaluate_node_in_context(&args[2], cell) {
+                CalcResult::String(s) if !s.is_empty() => Some(s),
+                CalcResult::EmptyCell | CalcResult::EmptyArg => None,
+                CalcResult::Error { .. } => None,
+                _ => None,
+            }
+        } else {
+            None
+        };
+
+        // Get ignore_empty (optional, default false)
+        let ignore_empty = if arg_count >= 4 {
+            match self.get_boolean(&args[3], cell) {
+                Ok(b) => b,
+                Err(_) => false,
+            }
+        } else {
+            false
+        };
+
+        // Get pad_with (optional, default #N/A) - arg index 5
+        let pad_with = if arg_count >= 6 {
+            match self.evaluate_node_in_context(&args[5], cell) {
+                CalcResult::Number(n) => ArrayNode::Number(n),
+                CalcResult::String(s) => ArrayNode::String(s),
+                CalcResult::Boolean(b) => ArrayNode::Boolean(b),
+                CalcResult::EmptyCell | CalcResult::EmptyArg => ArrayNode::String(String::new()),
+                _ => ArrayNode::Error(Error::NA),
+            }
+        } else {
+            ArrayNode::Error(Error::NA)
+        };
+
+        // Split by row delimiter first, then by column delimiter
+        let rows: Vec<&str> = if let Some(ref rd) = row_delim {
+            text.split(rd.as_str()).collect()
+        } else {
+            vec![text.as_str()]
+        };
+
+        let mut result: Vec<Vec<ArrayNode>> = Vec::new();
+        let mut max_cols = 0;
+
+        for row_text in rows {
+            let cols: Vec<&str> = if col_delim.is_empty() {
+                vec![row_text]
+            } else {
+                row_text.split(col_delim.as_str()).collect()
+            };
+            
+            let filtered: Vec<ArrayNode> = cols
+                .into_iter()
+                .filter(|s| !ignore_empty || !s.is_empty())
+                .map(|s| ArrayNode::String(s.to_string()))
+                .collect();
+            
+            if !ignore_empty || !filtered.is_empty() {
+                max_cols = max_cols.max(filtered.len());
+                result.push(filtered);
+            }
+        }
+
+        // Pad rows to have same number of columns
+        for row in &mut result {
+            while row.len() < max_cols {
+                row.push(pad_with.clone());
+            }
+        }
+
+        if result.is_empty() {
+            CalcResult::String(String::new())
+        } else if result.len() == 1 && result[0].len() == 1 {
+            // Single value - return as scalar
+            match &result[0][0] {
+                ArrayNode::String(s) => CalcResult::String(s.clone()),
+                ArrayNode::Number(n) => CalcResult::Number(*n),
+                ArrayNode::Boolean(b) => CalcResult::Boolean(*b),
+                ArrayNode::Error(e) => CalcResult::new_error(e.clone(), cell, String::new()),
+            }
+        } else {
+            CalcResult::Array(result)
+        }
+    }
 }
