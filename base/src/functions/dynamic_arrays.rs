@@ -129,19 +129,26 @@ impl Model {
         let include_cols = include_data.first().map(|r| r.len()).unwrap_or(0);
 
         // Determine filter direction: by rows or by columns
-        // If include has same number of rows as array -> filter rows
-        // If include has same number of cols as array -> filter columns
+        // STRICT validation: dimensions must match exactly
         let filter_by_rows: bool;
         
+        // Check for row filtering: include must have same rows as array
+        // and include should be a column vector (Nx1)
         if include_rows == array_rows && include_cols == 1 {
             filter_by_rows = true;
-        } else if include_cols == array_cols && include_rows == 1 {
+        }
+        // Check for column filtering: include must have same cols as array
+        // and include should be a row vector (1xM)
+        else if include_rows == 1 && include_cols == array_cols {
             filter_by_rows = false;
-        } else if include_rows == array_rows {
+        }
+        // 2D array case: include dimensions must match array dimensions
+        else if include_rows == array_rows && include_cols == array_cols {
+            // Full 2D match - filter by rows (each row's first column determines)
             filter_by_rows = true;
-        } else if include_cols == array_cols {
-            filter_by_rows = false;
-        } else {
+        }
+        // No valid dimension match
+        else {
             return CalcResult::Error {
                 error: Error::VALUE,
                 origin: cell,
