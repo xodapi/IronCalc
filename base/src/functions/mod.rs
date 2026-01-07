@@ -29,6 +29,7 @@ mod xlookup;
 mod dynamic_arrays;
 mod text_functions_new;
 mod matrix_functions;
+mod lambda_helpers;
 
 /// List of all implemented functions
 #[derive(PartialEq, Clone, Debug)]
@@ -231,6 +232,14 @@ pub enum Function {
     Munit,
     Seriessum,
     Multinomial,
+
+    // Phase 3: LAMBDA Helper Functions (6 new)
+    Map,
+    Reduce,
+    Scan,
+    Bycol,
+    Byrow,
+    Makearray,
 
     // Statistical
     Average,
@@ -476,7 +485,7 @@ pub enum Function {
 }
 
 impl Function {
-    pub fn into_iter() -> IntoIter<Function, 386> {
+    pub fn into_iter() -> IntoIter<Function, 392> {
         [
             Function::And,
             Function::False,
@@ -868,6 +877,13 @@ impl Function {
             Function::Munit,
             Function::Seriessum,
             Function::Multinomial,
+            // Phase 3: LAMBDA Helper Functions
+            Function::Map,
+            Function::Reduce,
+            Function::Scan,
+            Function::Bycol,
+            Function::Byrow,
+            Function::Makearray,
         ]
         .into_iter()
     }
@@ -1430,6 +1446,14 @@ impl Function {
             "MUNIT" | "_XLFN.MUNIT" | "ЕДИНИЧН" => Some(Function::Munit),
             "SERIESSUM" | "СУММРЯД" => Some(Function::Seriessum),
             "MULTINOMIAL" | "МУЛЬТИНОМ" => Some(Function::Multinomial),
+            
+            // Phase 3: LAMBDA Helper Functions
+            "MAP" | "_XLFN.MAP" | "КАРТА" => Some(Function::Map),
+            "REDUCE" | "_XLFN.REDUCE" | "РЕДУЦИРОВАТЬ" => Some(Function::Reduce),
+            "SCAN" | "_XLFN.SCAN" | "СКАН" => Some(Function::Scan),
+            "BYCOL" | "_XLFN.BYCOL" | "ПОСТОЛБЦАМ" => Some(Function::Bycol),
+            "BYROW" | "_XLFN.BYROW" | "ПОСТРОКАМ" => Some(Function::Byrow),
+            "MAKEARRAY" | "_XLFN.MAKEARRAY" | "СФОРМИРОВАТЬ" => Some(Function::Makearray),
 
             _ => None,
         }
@@ -1834,6 +1858,14 @@ impl fmt::Display for Function {
             Function::Munit => write!(f, "MUNIT"),
             Function::Seriessum => write!(f, "SERIESSUM"),
             Function::Multinomial => write!(f, "MULTINOMIAL"),
+            
+            // Phase 3: LAMBDA Helper Functions
+            Function::Map => write!(f, "MAP"),
+            Function::Reduce => write!(f, "REDUCE"),
+            Function::Scan => write!(f, "SCAN"),
+            Function::Bycol => write!(f, "BYCOL"),
+            Function::Byrow => write!(f, "BYROW"),
+            Function::Makearray => write!(f, "MAKEARRAY"),
         }
     }
 }
@@ -2256,6 +2288,14 @@ impl Model {
             Function::Munit => self.fn_munit(args, cell),
             Function::Seriessum => self.fn_seriessum(args, cell),
             Function::Multinomial => self.fn_multinomial(args, cell),
+            
+            // Phase 3: LAMBDA Helper Functions
+            Function::Map => self.fn_map(args, cell),
+            Function::Reduce => self.fn_reduce(args, cell),
+            Function::Scan => self.fn_scan(args, cell),
+            Function::Bycol => self.fn_bycol(args, cell),
+            Function::Byrow => self.fn_byrow(args, cell),
+            Function::Makearray => self.fn_makearray(args, cell),
         }
     }
 }

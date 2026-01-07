@@ -1058,6 +1058,14 @@ fn get_function_args_signature(kind: &Function, arg_count: usize) -> Vec<Signatu
         Function::Munit => vec![Signature::Scalar],
         Function::Seriessum => vec![Signature::Scalar, Signature::Scalar, Signature::Scalar, Signature::Vector],
         Function::Multinomial => vec![Signature::Vector; arg_count],
+        
+        // Phase 3: LAMBDA Helper Functions
+        Function::Map => vec![Signature::Vector, Signature::Scalar],
+        Function::Reduce => vec![Signature::Scalar, Signature::Vector, Signature::Scalar],
+        Function::Scan => vec![Signature::Scalar, Signature::Vector, Signature::Scalar],
+        Function::Bycol => vec![Signature::Vector, Signature::Scalar],
+        Function::Byrow => vec![Signature::Vector, Signature::Scalar],
+        Function::Makearray => vec![Signature::Scalar, Signature::Scalar, Signature::Scalar],
     }
 }
 
@@ -1457,5 +1465,13 @@ fn static_analysis_on_function(kind: &Function, args: &[Node]) -> StaticResult {
         Function::Munit => StaticResult::Unknown,
         Function::Seriessum => StaticResult::Scalar,
         Function::Multinomial => StaticResult::Scalar,
+        
+        // Phase 3: LAMBDA Helper Functions
+        Function::Map => StaticResult::Unknown,
+        Function::Reduce => StaticResult::Unknown,
+        Function::Scan => StaticResult::Unknown,
+        Function::Bycol => StaticResult::Unknown,
+        Function::Byrow => StaticResult::Unknown,
+        Function::Makearray => StaticResult::Unknown,
     }
 }
