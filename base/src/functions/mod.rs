@@ -28,6 +28,7 @@ pub(crate) mod util;
 mod xlookup;
 mod dynamic_arrays;
 mod text_functions_new;
+mod matrix_functions;
 
 /// List of all implemented functions
 #[derive(PartialEq, Clone, Debug)]
@@ -222,6 +223,14 @@ pub enum Function {
     Findb,
     Searchb,
     Replaceb,
+
+    // Phase 2: Matrix/Math Functions (6 new)
+    Mmult,
+    Minverse,
+    Mdeterm,
+    Munit,
+    Seriessum,
+    Multinomial,
 
     // Statistical
     Average,
@@ -467,7 +476,7 @@ pub enum Function {
 }
 
 impl Function {
-    pub fn into_iter() -> IntoIter<Function, 380> {
+    pub fn into_iter() -> IntoIter<Function, 386> {
         [
             Function::And,
             Function::False,
@@ -852,6 +861,13 @@ impl Function {
             Function::Findb,
             Function::Searchb,
             Function::Replaceb,
+            // Phase 2: Matrix/Math Functions
+            Function::Mmult,
+            Function::Minverse,
+            Function::Mdeterm,
+            Function::Munit,
+            Function::Seriessum,
+            Function::Multinomial,
         ]
         .into_iter()
     }
@@ -1406,6 +1422,14 @@ impl Function {
             "FINDB" | "НАЙТИБ" => Some(Function::Findb),
             "SEARCHB" | "ПОИСКБ" => Some(Function::Searchb),
             "REPLACEB" | "ЗАМЕНИТЬБ" => Some(Function::Replaceb),
+            
+            // Phase 2: Matrix/Math Functions
+            "MMULT" | "МУМНОЖ" => Some(Function::Mmult),
+            "MINVERSE" | "МОБР" => Some(Function::Minverse),
+            "MDETERM" | "МОПРЕД" => Some(Function::Mdeterm),
+            "MUNIT" | "_XLFN.MUNIT" | "ЕДИНИЧН" => Some(Function::Munit),
+            "SERIESSUM" | "СУММРЯД" => Some(Function::Seriessum),
+            "MULTINOMIAL" | "МУЛЬТИНОМ" => Some(Function::Multinomial),
 
             _ => None,
         }
@@ -1802,6 +1826,14 @@ impl fmt::Display for Function {
             Function::Findb => write!(f, "FINDB"),
             Function::Searchb => write!(f, "SEARCHB"),
             Function::Replaceb => write!(f, "REPLACEB"),
+            
+            // Phase 2: Matrix/Math Functions
+            Function::Mmult => write!(f, "MMULT"),
+            Function::Minverse => write!(f, "MINVERSE"),
+            Function::Mdeterm => write!(f, "MDETERM"),
+            Function::Munit => write!(f, "MUNIT"),
+            Function::Seriessum => write!(f, "SERIESSUM"),
+            Function::Multinomial => write!(f, "MULTINOMIAL"),
         }
     }
 }
@@ -2216,6 +2248,14 @@ impl Model {
             Function::Findb => self.fn_findb(args, cell),
             Function::Searchb => self.fn_searchb(args, cell),
             Function::Replaceb => self.fn_replaceb(args, cell),
+            
+            // Phase 2: Matrix/Math Functions
+            Function::Mmult => self.fn_mmult(args, cell),
+            Function::Minverse => self.fn_minverse(args, cell),
+            Function::Mdeterm => self.fn_mdeterm(args, cell),
+            Function::Munit => self.fn_munit(args, cell),
+            Function::Seriessum => self.fn_seriessum(args, cell),
+            Function::Multinomial => self.fn_multinomial(args, cell),
         }
     }
 }

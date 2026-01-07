@@ -1050,6 +1050,14 @@ fn get_function_args_signature(kind: &Function, arg_count: usize) -> Vec<Signatu
         Function::Findb => vec![Signature::Scalar; arg_count],
         Function::Searchb => vec![Signature::Scalar; arg_count],
         Function::Replaceb => vec![Signature::Scalar; 4],
+        
+        // Phase 2: Matrix/Math Functions
+        Function::Mmult => vec![Signature::Vector, Signature::Vector],
+        Function::Minverse => vec![Signature::Vector],
+        Function::Mdeterm => vec![Signature::Vector],
+        Function::Munit => vec![Signature::Scalar],
+        Function::Seriessum => vec![Signature::Scalar, Signature::Scalar, Signature::Scalar, Signature::Vector],
+        Function::Multinomial => vec![Signature::Vector; arg_count],
     }
 }
 
@@ -1441,5 +1449,13 @@ fn static_analysis_on_function(kind: &Function, args: &[Node]) -> StaticResult {
         Function::Findb => StaticResult::Scalar,
         Function::Searchb => StaticResult::Scalar,
         Function::Replaceb => StaticResult::Scalar,
+        
+        // Phase 2: Matrix/Math Functions
+        Function::Mmult => StaticResult::Unknown,
+        Function::Minverse => StaticResult::Unknown,
+        Function::Mdeterm => StaticResult::Scalar,
+        Function::Munit => StaticResult::Unknown,
+        Function::Seriessum => StaticResult::Scalar,
+        Function::Multinomial => StaticResult::Scalar,
     }
 }
