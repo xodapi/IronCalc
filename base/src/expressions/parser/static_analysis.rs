@@ -1076,6 +1076,18 @@ fn get_function_args_signature(kind: &Function, arg_count: usize) -> Vec<Signatu
         Function::Wrapcols => vec![Signature::Vector, Signature::Scalar, Signature::Scalar],
         Function::Expand => vec![Signature::Vector, Signature::Scalar, Signature::Scalar, Signature::Scalar],
         Function::Textsplit => vec![Signature::Scalar; arg_count],
+        
+        // Phase 5: Advanced Financial Functions
+        Function::Accrint => vec![Signature::Scalar; arg_count],
+        Function::Accrintm => vec![Signature::Scalar; arg_count],
+        Function::Price => vec![Signature::Scalar; arg_count],
+        Function::Yield => vec![Signature::Scalar; arg_count],
+        Function::Duration => vec![Signature::Scalar; arg_count],
+        Function::Mduration => vec![Signature::Scalar; arg_count],
+        Function::Disc => vec![Signature::Scalar; arg_count],
+        Function::Intrate => vec![Signature::Scalar; arg_count],
+        Function::Received => vec![Signature::Scalar; arg_count],
+        Function::Pricemat => vec![Signature::Scalar; arg_count],
     }
 }
 
@@ -1493,5 +1505,17 @@ fn static_analysis_on_function(kind: &Function, args: &[Node]) -> StaticResult {
         Function::Wrapcols => StaticResult::Unknown,
         Function::Expand => StaticResult::Unknown,
         Function::Textsplit => StaticResult::Unknown,
+        
+        // Phase 5: Advanced Financial Functions
+        Function::Accrint => StaticResult::Scalar,
+        Function::Accrintm => StaticResult::Scalar,
+        Function::Price => StaticResult::Scalar,
+        Function::Yield => StaticResult::Scalar,
+        Function::Duration => StaticResult::Scalar,
+        Function::Mduration => StaticResult::Scalar,
+        Function::Disc => StaticResult::Scalar,
+        Function::Intrate => StaticResult::Scalar,
+        Function::Received => StaticResult::Scalar,
+        Function::Pricemat => StaticResult::Scalar,
     }
 }

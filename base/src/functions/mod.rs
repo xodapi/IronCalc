@@ -31,6 +31,7 @@ mod text_functions_new;
 mod matrix_functions;
 mod lambda_helpers;
 mod array_manipulation;
+mod financial_advanced;
 
 /// List of all implemented functions
 #[derive(PartialEq, Clone, Debug)]
@@ -251,6 +252,18 @@ pub enum Function {
     Wrapcols,
     Expand,
     Textsplit,
+
+    // Phase 5: Advanced Financial Functions (10 new - others already exist)
+    Accrint,
+    Accrintm,
+    Price,
+    Yield,
+    Duration,
+    Mduration,
+    Disc,
+    Intrate,
+    Received,
+    Pricemat,
 
     // Statistical
     Average,
@@ -496,7 +509,7 @@ pub enum Function {
 }
 
 impl Function {
-    pub fn into_iter() -> IntoIter<Function, 400> {
+    pub fn into_iter() -> IntoIter<Function, 410> {
         [
             Function::And,
             Function::False,
@@ -904,6 +917,17 @@ impl Function {
             Function::Wrapcols,
             Function::Expand,
             Function::Textsplit,
+            // Phase 5: Advanced Financial Functions
+            Function::Accrint,
+            Function::Accrintm,
+            Function::Price,
+            Function::Yield,
+            Function::Duration,
+            Function::Mduration,
+            Function::Disc,
+            Function::Intrate,
+            Function::Received,
+            Function::Pricemat,
         ]
         .into_iter()
     }
@@ -1484,6 +1508,18 @@ impl Function {
             "WRAPCOLS" | "_XLFN.WRAPCOLS" | "ОБЕРН.СТОЛБЦЫ" => Some(Function::Wrapcols),
             "EXPAND" | "_XLFN.EXPAND" | "РАСШИРИТЬ" => Some(Function::Expand),
             "TEXTSPLIT" | "_XLFN.TEXTSPLIT" | "РАЗБТЕКСТ" => Some(Function::Textsplit),
+            
+            // Phase 5: Advanced Financial Functions
+            "ACCRINT" | "НАКОПДОХОД" => Some(Function::Accrint),
+            "ACCRINTM" | "НАКОПДОХОДПОГАШ" => Some(Function::Accrintm),
+            "PRICE" | "ЦЕНА" => Some(Function::Price),
+            "YIELD" | "ДОХОД" => Some(Function::Yield),
+            "DURATION" | "ДЛИТ" => Some(Function::Duration),
+            "MDURATION" | "МДЛИТ" => Some(Function::Mduration),
+            "DISC" | "СКИДКА" => Some(Function::Disc),
+            "INTRATE" | "ИНОРМА" => Some(Function::Intrate),
+            "RECEIVED" | "ПОЛУЧЕНО" => Some(Function::Received),
+            "PRICEMAT" | "ЦЕНАПОГАШ" => Some(Function::Pricemat),
 
             _ => None,
         }
@@ -1906,6 +1942,18 @@ impl fmt::Display for Function {
             Function::Wrapcols => write!(f, "WRAPCOLS"),
             Function::Expand => write!(f, "EXPAND"),
             Function::Textsplit => write!(f, "TEXTSPLIT"),
+            
+            // Phase 5: Advanced Financial Functions
+            Function::Accrint => write!(f, "ACCRINT"),
+            Function::Accrintm => write!(f, "ACCRINTM"),
+            Function::Price => write!(f, "PRICE"),
+            Function::Yield => write!(f, "YIELD"),
+            Function::Duration => write!(f, "DURATION"),
+            Function::Mduration => write!(f, "MDURATION"),
+            Function::Disc => write!(f, "DISC"),
+            Function::Intrate => write!(f, "INTRATE"),
+            Function::Received => write!(f, "RECEIVED"),
+            Function::Pricemat => write!(f, "PRICEMAT"),
         }
     }
 }
@@ -2346,6 +2394,18 @@ impl Model {
             Function::Wrapcols => self.fn_wrapcols(args, cell),
             Function::Expand => self.fn_expand(args, cell),
             Function::Textsplit => self.fn_textsplit(args, cell),
+            
+            // Phase 5: Advanced Financial Functions
+            Function::Accrint => self.fn_accrint(args, cell),
+            Function::Accrintm => self.fn_accrintm(args, cell),
+            Function::Price => self.fn_price(args, cell),
+            Function::Yield => self.fn_yield(args, cell),
+            Function::Duration => self.fn_duration(args, cell),
+            Function::Mduration => self.fn_mduration(args, cell),
+            Function::Disc => self.fn_disc(args, cell),
+            Function::Intrate => self.fn_intrate(args, cell),
+            Function::Received => self.fn_received(args, cell),
+            Function::Pricemat => self.fn_pricemat(args, cell),
         }
     }
 }
