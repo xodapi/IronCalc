@@ -167,5 +167,36 @@
   "right_drawer": {
     "close": "Close",
     "resize_drawer": "Resize drawer"
+  },
+  "ribbon": {
+    "tabs": {
+      "home": "Home",
+      "insert": "Insert",
+      "formulas": "Formulas",
+      "data": "Data",
+      "view": "View"
+    },
+    "groups": {
+      "clipboard": "Clipboard",
+      "font": "Font",
+      "alignment": "Alignment",
+      "function_library": "Function Library",
+      "charts": "Charts",
+      "links": "Links",
+      "sort_filter": "Sort & Filter",
+      "show": "Show"
+    },
+    "actions": {
+      "paste": "Paste",
+      "cut": "Cut",
+      "copy": "Copy",
+      "chart": "Chart",
+      "link": "Link",
+      "sort_asc": "A-Z",
+      "sort_desc": "Z-A",
+      "gridlines": "Gridlines",
+      "headers": "Headers"
+    },
+    "search_function": "🔍 Search function..."
   }
 }

@@ -1,9 +1,9 @@
 import type {
-  BorderOptions,
   ClipboardCell,
   Model,
   WorksheetProperties,
 } from "@ironcalc/wasm";
+import type { BorderOptions } from "../../types/border";
 import { styled } from "@mui/material/styles";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -12,6 +12,7 @@ import {
 } from "../clipboard";
 import { TOOLBAR_HEIGHT } from "../constants";
 import FormulaBar from "../FormulaBar/FormulaBar";
+import { Ribbon, RIBBON_HEIGHT } from "../Ribbon";
 import RightDrawer, { DEFAULT_DRAWER_WIDTH } from "../RightDrawer/RightDrawer";
 import SheetTabBar from "../SheetTabBar";
 import Toolbar from "../Toolbar/Toolbar";
@@ -546,6 +547,15 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
         setRedrawId((id) => id + 1);
       }}
     >
+      <Ribbon
+        onInsertFormula={(formula: string) => {
+          const { sheet, row, column } = model.getSelectedView();
+          model.setUserInput(sheet, row, column, formula);
+          model.evaluate();
+          setRedrawId((id) => id + 1);
+        }}
+        canEdit={true}
+      />
       <Toolbar
         canUndo={model.canUndo()}
         canRedo={model.canRedo()}
@@ -768,9 +778,9 @@ type WorksheetAreaLeftProps = { $drawerWidth: number };
 const WorksheetAreaLeft = styled("div")<WorksheetAreaLeftProps>(
   ({ $drawerWidth }) => ({
     position: "absolute",
-    top: `${TOOLBAR_HEIGHT}px`,
+    top: `${TOOLBAR_HEIGHT + RIBBON_HEIGHT}px`,
     width: `calc(100% - ${$drawerWidth}px)`,
-    height: `calc(100% - ${TOOLBAR_HEIGHT}px)`,
+    height: `calc(100% - ${TOOLBAR_HEIGHT + RIBBON_HEIGHT}px)`,
   }),
 );
 

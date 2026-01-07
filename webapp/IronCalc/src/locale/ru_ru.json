@@ -167,5 +167,36 @@
     "right_drawer": {
         "close": "Закрыть",
         "resize_drawer": "Изменить размер панели"
+    },
+    "ribbon": {
+        "tabs": {
+            "home": "Главная",
+            "insert": "Вставка",
+            "formulas": "Формулы",
+            "data": "Данные",
+            "view": "Вид"
+        },
+        "groups": {
+            "clipboard": "Буфер обмена",
+            "font": "Шрифт",
+            "alignment": "Выравнивание",
+            "function_library": "Библиотека функций",
+            "charts": "Диаграммы",
+            "links": "Ссылки",
+            "sort_filter": "Сортировка и фильтр",
+            "show": "Показать"
+        },
+        "actions": {
+            "paste": "Вставить",
+            "cut": "Вырезать",
+            "copy": "Копировать",
+            "chart": "Диаграмма",
+            "link": "Ссылка",
+            "sort_asc": "А-Я",
+            "sort_desc": "Я-А",
+            "gridlines": "Сетка",
+            "headers": "Заголовки"
+        },
+        "search_function": "🔍 Поиск функции..."
     }
 }
