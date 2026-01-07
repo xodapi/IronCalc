@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 
 <head>
     <meta charset="UTF-8">
@@ -46,6 +46,8 @@
             padding: 6px 12px;
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
         }
 
         .toolbar button {
@@ -54,6 +56,18 @@
             border-radius: 4px;
             background: white;
             cursor: pointer;
+            font-size: 13px;
+        }
+
+        .toolbar button:hover {
+            background: #f0f0f0;
+        }
+
+        .toolbar select {
+            padding: 3px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
         }
 
         .formula-bar {
@@ -155,25 +169,107 @@
 <body>
     <div class="app" id="app" style="display:none">
         <div class="header">
-            <h1>📊 IronCalc Desktop</h1><span style="margin-left:auto;font-size:12px;opacity:0.8" id="ver">v0.6.0</span>
+            <h1>📊 IronCalc Desktop</h1>
+            <span style="margin-left:auto;font-size:12px;opacity:0.8" id="ver">v0.6.0</span>
         </div>
         <div class="toolbar">
-            <button onclick="newWb()">📄 New</button>
-            <button onclick="openF()">📂 Open</button>
-            <button onclick="saveF()">💾 Save</button>
-            <span style="margin-left:12px;color:#666;font-size:12px">Формулы: =SUM(A1:A5), =IF(A1>5,"Да","Нет"),
-                =AVERAGE()</span>
+            <button id="btnNew">📄 <span data-i18n="new">Новый</span></button>
+            <button id="btnOpen">📂 <span data-i18n="open">Открыть</span></button>
+            <button id="btnSave">💾 <span data-i18n="save">Сохранить</span></button>
+            <span style="border-left:1px solid #ccc;height:20px;margin:0 8px"></span>
+            <select id="langSelect">
+                <option value="ru">🇷🇺 Русский</option>
+                <option value="en">🇬🇧 English</option>
+            </select>
+            <span style="margin-left:12px;color:#666;font-size:12px" data-i18n="formulaHint">Формулы: =SUM(A1:A5),
+                =IF(A1>5,"Да","Нет")</span>
         </div>
         <div class="formula-bar">
             <div class="cell-address" id="addr">A1</div>
-            <input class="formula-input" id="fin" placeholder="Введите значение или формулу...">
+            <input class="formula-input" id="fin" data-i18n-placeholder="inputHint">
         </div>
         <div class="spreadsheet" id="ss"></div>
-        <div class="status-bar"><span id="st">Ready</span><span>IronCalc Engine</span></div>
+        <div class="status-bar">
+            <span id="st" data-i18n="ready">Готово</span>
+            <span>IronCalc Engine</span>
+        </div>
     </div>
-    <div class="loading" id="ld">Загрузка IronCalc...</div>
+    <div class="loading" id="ld" data-i18n="loading">Загрузка IronCalc...</div>
+
     <script type="module">
         import init, { Model } from './wasm.js';
+
+        // ===== ЛОКАЛИЗАЦИЯ =====
+        const i18n = {
+            ru: {
+                new: 'Новый',
+                open: 'Открыть',
+                save: 'Сохранить',
+                formulaHint: 'Формулы: =SUM(A1:A5), =IF(A1>5,"Да","Нет")',
+                inputHint: 'Введите значение или формулу...',
+                ready: 'Готово',
+                loading: 'Загрузка IronCalc...',
+                newBook: 'Книга1',
+                confirmNew: 'Создать новую книгу? Несохранённые данные будут потеряны.',
+                newCreated: 'Новая книга создана',
+                openFile: 'Открытие файла (скоро)',
+                saveFile: 'Сохранение файла (скоро)',
+                error: 'Ошибка',
+                readyMsg: 'Готово! Попробуйте: =2+2 или =SUM(A1:A5)',
+                loadError: 'Ошибка загрузки'
+            },
+            en: {
+                new: 'New',
+                open: 'Open',
+                save: 'Save',
+                formulaHint: 'Formulas: =SUM(A1:A5), =IF(A1>5,"Yes","No")',
+                inputHint: 'Enter value or formula...',
+                ready: 'Ready',
+                loading: 'Loading IronCalc...',
+                newBook: 'Book1',
+                confirmNew: 'Create new workbook? Unsaved changes will be lost.',
+                newCreated: 'New workbook created',
+                openFile: 'Open file (coming soon)',
+                saveFile: 'Save file (coming soon)',
+                error: 'Error',
+                readyMsg: 'Ready! Try: =2+2 or =SUM(A1:A5)',
+                loadError: 'Load error'
+            }
+        };
+
+        let currentLang = localStorage.getItem('ironcalc_lang') || 'ru';
+
+        function t(key) {
+            return i18n[currentLang][key] || key;
+        }
+
+        function updateUI() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.dataset.i18n;
+                if (key) el.textContent = t(key);
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.dataset.i18nPlaceholder;
+                if (key) el.placeholder = t(key);
+            });
+            document.getElementById('langSelect').value = currentLang;
+            document.documentElement.lang = currentLang;
+        }
+
+        function setLang(lang) {
+            currentLang = lang;
+            localStorage.setItem('ironcalc_lang', lang);
+            updateUI();
+            // Пересоздать модель с правильной локалью
+            if (model) {
+                model = new Model(t('newBook'), lang === 'ru' ? 'ru' : 'en', 'UTC');
+                refreshAll();
+            }
+        }
+
+        document.getElementById('langSelect').onchange = (e) => setLang(e.target.value);
+
+        // ===== ТАБЛИЦА =====
         const R = 50, C = 20;
         let model = null;
         let sel = { r: 1, c: 1 };
@@ -259,8 +355,7 @@
                     refreshAll();
                     document.getElementById('st').textContent = `${cellRef(r, c)} = ${value}`;
                 } catch (e) {
-                    document.getElementById('st').textContent = 'Ошибка: ' + e.message;
-                    console.error(e);
+                    document.getElementById('st').textContent = t('error') + ': ' + e.message;
                 }
             }
         }
@@ -293,34 +388,36 @@
                     refreshAll();
                     if (sel.r < R) document.getElementById(`c${sel.r + 1}_${sel.c}`).focus();
                 } catch (err) {
-                    document.getElementById('st').textContent = 'Ошибка: ' + err.message;
+                    document.getElementById('st').textContent = t('error') + ': ' + err.message;
                 }
             }
         };
 
-        window.newWb = () => {
-            if (confirm('Создать новую книгу?')) {
-                model = new Model('Книга1', 'ru', 'UTC');
+        // Кнопки
+        document.getElementById('btnNew').onclick = () => {
+            if (confirm(t('confirmNew'))) {
+                model = new Model(t('newBook'), currentLang === 'ru' ? 'ru' : 'en', 'UTC');
                 refreshAll();
-                document.getElementById('st').textContent = 'Новая книга создана';
+                document.getElementById('st').textContent = t('newCreated');
             }
         };
-        window.openF = () => alert('Открытие файла через Tauri API');
-        window.saveF = () => alert('Сохранение файла через Tauri API');
+        document.getElementById('btnOpen').onclick = () => alert(t('openFile'));
+        document.getElementById('btnSave').onclick = () => alert(t('saveFile'));
 
+        // ===== ИНИЦИАЛИЗАЦИЯ =====
         async function initApp() {
             try {
                 await init();
-                // Model(name, locale, timezone)
-                model = new Model('Книга1', 'ru', 'UTC');
+                model = new Model(t('newBook'), currentLang === 'ru' ? 'ru' : 'en', 'UTC');
                 buildTable();
                 selectCell(1, 1);
+                updateUI();
                 document.getElementById('ld').style.display = 'none';
                 document.getElementById('app').style.display = 'flex';
-                document.getElementById('st').textContent = 'Готово! Попробуйте: =2+2 или =SUM(A1:A5)';
+                document.getElementById('st').textContent = t('readyMsg');
             } catch (e) {
                 console.error('Init error:', e);
-                document.getElementById('ld').innerHTML = `<div style="color:red">Ошибка загрузки: ${e.message || e}</div>`;
+                document.getElementById('ld').innerHTML = `<div style="color:red">${t('loadError')}: ${e.message || e}</div>`;
             }
         }
 
