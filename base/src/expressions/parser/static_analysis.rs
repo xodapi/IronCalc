@@ -1034,6 +1034,22 @@ fn get_function_args_signature(kind: &Function, arg_count: usize) -> Vec<Signatu
         
         // Modern Functions
         Function::Let => vec![Signature::Scalar; arg_count],
+        
+        // Phase 1: New Text Functions
+        Function::Fixed => vec![Signature::Scalar; arg_count],
+        Function::Dollar => vec![Signature::Scalar; arg_count],
+        Function::Numbervalue => vec![Signature::Scalar; arg_count],
+        Function::Bahttext => vec![Signature::Scalar],
+        Function::Asc => vec![Signature::Scalar],
+        Function::Dbcs => vec![Signature::Scalar],
+        Function::Jis => vec![Signature::Scalar],
+        Function::Leftb => vec![Signature::Scalar; arg_count],
+        Function::Lenb => vec![Signature::Scalar],
+        Function::Midb => vec![Signature::Scalar, Signature::Scalar, Signature::Scalar],
+        Function::Rightb => vec![Signature::Scalar; arg_count],
+        Function::Findb => vec![Signature::Scalar; arg_count],
+        Function::Searchb => vec![Signature::Scalar; arg_count],
+        Function::Replaceb => vec![Signature::Scalar; 4],
     }
 }
 
@@ -1409,5 +1425,21 @@ fn static_analysis_on_function(kind: &Function, args: &[Node]) -> StaticResult {
         
         // Modern Functions
         Function::Let => StaticResult::Unknown,
+        
+        // Phase 1: New Text Functions
+        Function::Fixed => StaticResult::Scalar,
+        Function::Dollar => StaticResult::Scalar,
+        Function::Numbervalue => StaticResult::Scalar,
+        Function::Bahttext => StaticResult::Scalar,
+        Function::Asc => StaticResult::Scalar,
+        Function::Dbcs => StaticResult::Scalar,
+        Function::Jis => StaticResult::Scalar,
+        Function::Leftb => StaticResult::Scalar,
+        Function::Lenb => StaticResult::Scalar,
+        Function::Midb => StaticResult::Scalar,
+        Function::Rightb => StaticResult::Scalar,
+        Function::Findb => StaticResult::Scalar,
+        Function::Searchb => StaticResult::Scalar,
+        Function::Replaceb => StaticResult::Scalar,
     }
 }

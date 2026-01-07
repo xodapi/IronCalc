@@ -27,6 +27,7 @@ mod text_util;
 pub(crate) mod util;
 mod xlookup;
 mod dynamic_arrays;
+mod text_functions_new;
 
 /// List of all implemented functions
 #[derive(PartialEq, Clone, Debug)]
@@ -205,6 +206,22 @@ pub enum Function {
     Upper,
     Value,
     Valuetotext,
+
+    // Phase 1: New Text Functions (14 new)
+    Fixed,
+    Dollar,
+    Numbervalue,
+    Bahttext,
+    Asc,
+    Dbcs,
+    Jis,
+    Leftb,
+    Lenb,
+    Midb,
+    Rightb,
+    Findb,
+    Searchb,
+    Replaceb,
 
     // Statistical
     Average,
@@ -450,7 +467,7 @@ pub enum Function {
 }
 
 impl Function {
-    pub fn into_iter() -> IntoIter<Function, 366> {
+    pub fn into_iter() -> IntoIter<Function, 380> {
         [
             Function::And,
             Function::False,
@@ -820,6 +837,21 @@ impl Function {
             Function::Hstack,
             // Modern Functions
             Function::Let,
+            // Phase 1: New Text Functions
+            Function::Fixed,
+            Function::Dollar,
+            Function::Numbervalue,
+            Function::Bahttext,
+            Function::Asc,
+            Function::Dbcs,
+            Function::Jis,
+            Function::Leftb,
+            Function::Lenb,
+            Function::Midb,
+            Function::Rightb,
+            Function::Findb,
+            Function::Searchb,
+            Function::Replaceb,
         ]
         .into_iter()
     }
@@ -1358,6 +1390,22 @@ impl Function {
             
             // Modern Functions
             "LET" | "_XLFN.LET" | "ПУСТЬ" => Some(Function::Let),
+            
+            // Phase 1: New Text Functions
+            "FIXED" | "ФИКСИРОВАННЫЙ" => Some(Function::Fixed),
+            "DOLLAR" | "РУБЛЬ" => Some(Function::Dollar),
+            "NUMBERVALUE" | "_XLFN.NUMBERVALUE" | "ЧЗНАЧ" => Some(Function::Numbervalue),
+            "BAHTTEXT" => Some(Function::Bahttext),
+            "ASC" => Some(Function::Asc),
+            "DBCS" => Some(Function::Dbcs),
+            "JIS" => Some(Function::Jis),
+            "LEFTB" | "ЛЕВБ" => Some(Function::Leftb),
+            "LENB" | "ДЛИНБ" => Some(Function::Lenb),
+            "MIDB" | "ПСТРБ" => Some(Function::Midb),
+            "RIGHTB" | "ПРАВБ" => Some(Function::Rightb),
+            "FINDB" | "НАЙТИБ" => Some(Function::Findb),
+            "SEARCHB" | "ПОИСКБ" => Some(Function::Searchb),
+            "REPLACEB" | "ЗАМЕНИТЬБ" => Some(Function::Replaceb),
 
             _ => None,
         }
@@ -1738,6 +1786,22 @@ impl fmt::Display for Function {
             
             // Modern Functions
             Function::Let => write!(f, "LET"),
+            
+            // Phase 1: New Text Functions
+            Function::Fixed => write!(f, "FIXED"),
+            Function::Dollar => write!(f, "DOLLAR"),
+            Function::Numbervalue => write!(f, "NUMBERVALUE"),
+            Function::Bahttext => write!(f, "BAHTTEXT"),
+            Function::Asc => write!(f, "ASC"),
+            Function::Dbcs => write!(f, "DBCS"),
+            Function::Jis => write!(f, "JIS"),
+            Function::Leftb => write!(f, "LEFTB"),
+            Function::Lenb => write!(f, "LENB"),
+            Function::Midb => write!(f, "MIDB"),
+            Function::Rightb => write!(f, "RIGHTB"),
+            Function::Findb => write!(f, "FINDB"),
+            Function::Searchb => write!(f, "SEARCHB"),
+            Function::Replaceb => write!(f, "REPLACEB"),
         }
     }
 }
@@ -2136,6 +2200,22 @@ impl Model {
             
             // Modern Functions
             Function::Let => self.fn_let(args, cell),
+            
+            // Phase 1: New Text Functions
+            Function::Fixed => self.fn_fixed(args, cell),
+            Function::Dollar => self.fn_dollar(args, cell),
+            Function::Numbervalue => self.fn_numbervalue(args, cell),
+            Function::Bahttext => self.fn_bahttext(args, cell),
+            Function::Asc => self.fn_asc(args, cell),
+            Function::Dbcs => self.fn_dbcs(args, cell),
+            Function::Jis => self.fn_jis(args, cell),
+            Function::Leftb => self.fn_leftb(args, cell),
+            Function::Lenb => self.fn_lenb(args, cell),
+            Function::Midb => self.fn_midb(args, cell),
+            Function::Rightb => self.fn_rightb(args, cell),
+            Function::Findb => self.fn_findb(args, cell),
+            Function::Searchb => self.fn_searchb(args, cell),
+            Function::Replaceb => self.fn_replaceb(args, cell),
         }
     }
 }
