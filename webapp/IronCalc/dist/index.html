@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IronCalc Desktop</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #f8f9fa;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .toolbar {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 6px 12px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .toolbar button {
+            padding: 4px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .formula-bar {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+            background: white;
+        }
+
+        .cell-address {
+            width: 70px;
+            padding: 6px 8px;
+            border-right: 1px solid #e0e0e0;
+            font-size: 12px;
+            background: #f5f5f5;
+            text-align: center;
+        }
+
+        .formula-input {
+            flex: 1;
+            padding: 6px 8px;
+            border: none;
+            font-size: 13px;
+            font-family: Consolas, monospace;
+        }
+
+        .spreadsheet {
+            flex: 1;
+            overflow: auto;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #d0d0d0;
+            padding: 2px 6px;
+            min-width: 80px;
+            height: 22px;
+            font-size: 12px;
+        }
+
+        th {
+            background: #f0f0f0;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        th.row-header {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            width: 40px;
+            min-width: 40px;
+        }
+
+        th.corner {
+            position: sticky;
+            top: 0;
+            left: 0;
+            z-index: 3;
+        }
+
+        td {
+            background: white;
+        }
+
+        td:focus {
+            outline: 2px solid #667eea;
+            outline-offset: -2px;
+        }
+
+        td.selected {
+            background: #e3f2fd;
+        }
+
+        .status-bar {
+            background: #f5f5f5;
+            border-top: 1px solid #e0e0e0;
+            padding: 4px 12px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app" id="app" style="display:none">
+        <div class="header">
+            <h1>📊 IronCalc Desktop</h1><span style="margin-left:auto;font-size:12px;opacity:0.8" id="ver">v0.6.0</span>
+        </div>
+        <div class="toolbar">
+            <button onclick="newWb()">📄 New</button>
+            <button onclick="openF()">📂 Open</button>
+            <button onclick="saveF()">💾 Save</button>
+            <span style="margin-left:12px;color:#666;font-size:12px">Формулы: =SUM(A1:A5), =IF(A1>5,"Да","Нет"),
+                =AVERAGE()</span>
+        </div>
+        <div class="formula-bar">
+            <div class="cell-address" id="addr">A1</div>
+            <input class="formula-input" id="fin" placeholder="Введите значение или формулу...">
+        </div>
+        <div class="spreadsheet" id="ss"></div>
+        <div class="status-bar"><span id="st">Ready</span><span>IronCalc Engine</span></div>
+    </div>
+    <div class="loading" id="ld">Загрузка IronCalc...</div>
+    <script type="module">
+        import init, { Model } from './wasm.js';
+        const R = 50, C = 20;
+        let model = null;
+        let sel = { r: 1, c: 1 };
+
+        function colToLetter(c) {
+            let s = '';
+            while (c > 0) { c--; s = String.fromCharCode(65 + c % 26) + s; c = Math.floor(c / 26); }
+            return s;
+        }
+
+        function cellRef(r, c) { return colToLetter(c) + r; }
+
+        function buildTable() {
+            let h = '<table><thead><tr><th class="row-header corner"></th>';
+            for (let c = 1; c <= C; c++) h += `<th>${colToLetter(c)}</th>`;
+            h += '</tr></thead><tbody>';
+            for (let r = 1; r <= R; r++) {
+                h += `<tr><th class="row-header">${r}</th>`;
+                for (let c = 1; c <= C; c++) h += `<td id="c${r}_${c}" tabindex="0" data-r="${r}" data-c="${c}"></td>`;
+                h += '</tr>';
+            }
+            document.getElementById('ss').innerHTML = h + '</tbody></table>';
+            document.querySelectorAll('td').forEach(td => {
+                td.onfocus = () => selectCell(+td.dataset.r, +td.dataset.c);
+                td.ondblclick = () => startEdit(td);
+                td.onkeydown = e => handleKey(e, td);
+            });
+        }
+
+        function selectCell(r, c) {
+            document.querySelectorAll('.selected').forEach(x => x.classList.remove('selected'));
+            sel = { r, c };
+            const td = document.getElementById(`c${r}_${c}`);
+            if (td) td.classList.add('selected');
+            document.getElementById('addr').textContent = cellRef(r, c);
+            if (model) {
+                try {
+                    const content = model.getCellContent(0, r, c);
+                    document.getElementById('fin').value = content || '';
+                } catch (e) {
+                    document.getElementById('fin').value = '';
+                }
+            }
+        }
+
+        function startEdit(td) { td.contentEditable = true; td.focus(); }
+
+        function handleKey(e, td) {
+            const r = +td.dataset.r, c = +td.dataset.c;
+            if (e.key === 'Enter') {
+                if (td.isContentEditable) {
+                    commitCell(td, r, c);
+                    td.contentEditable = false;
+                    if (r < R) document.getElementById(`c${r + 1}_${c}`).focus();
+                } else {
+                    startEdit(td);
+                }
+                e.preventDefault();
+            } else if (e.key === 'Escape') {
+                td.contentEditable = false;
+                refreshCell(r, c);
+            } else if (e.key === 'Tab') {
+                if (td.isContentEditable) { commitCell(td, r, c); td.contentEditable = false; }
+                if (c < C) document.getElementById(`c${r}_${c + 1}`).focus();
+                e.preventDefault();
+            } else if (!td.isContentEditable && e.key.length === 1 && !e.ctrlKey) {
+                td.textContent = '';
+                startEdit(td);
+            } else if (!td.isContentEditable) {
+                if (e.key === 'ArrowUp' && r > 1) document.getElementById(`c${r - 1}_${c}`).focus();
+                if (e.key === 'ArrowDown' && r < R) document.getElementById(`c${r + 1}_${c}`).focus();
+                if (e.key === 'ArrowLeft' && c > 1) document.getElementById(`c${r}_${c - 1}`).focus();
+                if (e.key === 'ArrowRight' && c < C) document.getElementById(`c${r}_${c + 1}`).focus();
+            }
+        }
+
+        function commitCell(td, r, c) {
+            const value = td.textContent.trim();
+            if (model) {
+                try {
+                    model.setUserInput(0, r, c, value);
+                    model.evaluate();
+                    refreshAll();
+                    document.getElementById('st').textContent = `${cellRef(r, c)} = ${value}`;
+                } catch (e) {
+                    document.getElementById('st').textContent = 'Ошибка: ' + e.message;
+                    console.error(e);
+                }
+            }
+        }
+
+        function refreshCell(r, c) {
+            const td = document.getElementById(`c${r}_${c}`);
+            if (td && model) {
+                try {
+                    const val = model.getFormattedCellValue(0, r, c);
+                    td.textContent = val || '';
+                } catch (e) {
+                    td.textContent = '#ERR';
+                }
+            }
+        }
+
+        function refreshAll() {
+            for (let r = 1; r <= R; r++) {
+                for (let c = 1; c <= C; c++) {
+                    refreshCell(r, c);
+                }
+            }
+        }
+
+        document.getElementById('fin').onkeydown = e => {
+            if (e.key === 'Enter' && model) {
+                try {
+                    model.setUserInput(0, sel.r, sel.c, e.target.value);
+                    model.evaluate();
+                    refreshAll();
+                    if (sel.r < R) document.getElementById(`c${sel.r + 1}_${sel.c}`).focus();
+                } catch (err) {
+                    document.getElementById('st').textContent = 'Ошибка: ' + err.message;
+                }
+            }
+        };
+
+        window.newWb = () => {
+            if (confirm('Создать новую книгу?')) {
+                model = new Model('Книга1', 'ru', 'UTC');
+                refreshAll();
+                document.getElementById('st').textContent = 'Новая книга создана';
+            }
+        };
+        window.openF = () => alert('Открытие файла через Tauri API');
+        window.saveF = () => alert('Сохранение файла через Tauri API');
+
+        async function initApp() {
+            try {
+                await init();
+                // Model(name, locale, timezone)
+                model = new Model('Книга1', 'ru', 'UTC');
+                buildTable();
+                selectCell(1, 1);
+                document.getElementById('ld').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                document.getElementById('st').textContent = 'Готово! Попробуйте: =2+2 или =SUM(A1:A5)';
+            } catch (e) {
+                console.error('Init error:', e);
+                document.getElementById('ld').innerHTML = `<div style="color:red">Ошибка загрузки: ${e.message || e}</div>`;
+            }
+        }
+
+        initApp();
+    </script>
+</body>
+
+</html>
