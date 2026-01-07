@@ -104,3 +104,4 @@ mod test_sort;
 mod test_sequence;
 mod test_let;
 mod test_text_functions;
+mod test_function_registration;
