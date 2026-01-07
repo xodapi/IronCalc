@@ -30,6 +30,7 @@ mod dynamic_arrays;
 mod text_functions_new;
 mod matrix_functions;
 mod lambda_helpers;
+mod array_manipulation;
 
 /// List of all implemented functions
 #[derive(PartialEq, Clone, Debug)]
@@ -240,6 +241,16 @@ pub enum Function {
     Bycol,
     Byrow,
     Makearray,
+
+    // Phase 4: SQL-like and Array Manipulation (8 new)
+    Groupby,
+    Pivotby,
+    Tocol,
+    Torow,
+    Wraprows,
+    Wrapcols,
+    Expand,
+    Textsplit,
 
     // Statistical
     Average,
@@ -485,7 +496,7 @@ pub enum Function {
 }
 
 impl Function {
-    pub fn into_iter() -> IntoIter<Function, 392> {
+    pub fn into_iter() -> IntoIter<Function, 400> {
         [
             Function::And,
             Function::False,
@@ -884,6 +895,15 @@ impl Function {
             Function::Bycol,
             Function::Byrow,
             Function::Makearray,
+            // Phase 4: SQL-like and Array Manipulation
+            Function::Groupby,
+            Function::Pivotby,
+            Function::Tocol,
+            Function::Torow,
+            Function::Wraprows,
+            Function::Wrapcols,
+            Function::Expand,
+            Function::Textsplit,
         ]
         .into_iter()
     }
@@ -1454,6 +1474,16 @@ impl Function {
             "BYCOL" | "_XLFN.BYCOL" | "ПОСТОЛБЦАМ" => Some(Function::Bycol),
             "BYROW" | "_XLFN.BYROW" | "ПОСТРОКАМ" => Some(Function::Byrow),
             "MAKEARRAY" | "_XLFN.MAKEARRAY" | "СФОРМИРОВАТЬ" => Some(Function::Makearray),
+            
+            // Phase 4: SQL-like and Array Manipulation
+            "GROUPBY" | "_XLFN.GROUPBY" | "ГРУППИРОВАТЬ" => Some(Function::Groupby),
+            "PIVOTBY" | "_XLFN.PIVOTBY" | "СВОДКА" => Some(Function::Pivotby),
+            "TOCOL" | "_XLFN.TOCOL" | "ВКОЛОНКУ" => Some(Function::Tocol),
+            "TOROW" | "_XLFN.TOROW" | "ВСТРОКУ" => Some(Function::Torow),
+            "WRAPROWS" | "_XLFN.WRAPROWS" | "ОБЕРН.СТРОКИ" => Some(Function::Wraprows),
+            "WRAPCOLS" | "_XLFN.WRAPCOLS" | "ОБЕРН.СТОЛБЦЫ" => Some(Function::Wrapcols),
+            "EXPAND" | "_XLFN.EXPAND" | "РАСШИРИТЬ" => Some(Function::Expand),
+            "TEXTSPLIT" | "_XLFN.TEXTSPLIT" | "РАЗБТЕКСТ" => Some(Function::Textsplit),
 
             _ => None,
         }
@@ -1866,6 +1896,16 @@ impl fmt::Display for Function {
             Function::Bycol => write!(f, "BYCOL"),
             Function::Byrow => write!(f, "BYROW"),
             Function::Makearray => write!(f, "MAKEARRAY"),
+            
+            // Phase 4: SQL-like and Array Manipulation
+            Function::Groupby => write!(f, "GROUPBY"),
+            Function::Pivotby => write!(f, "PIVOTBY"),
+            Function::Tocol => write!(f, "TOCOL"),
+            Function::Torow => write!(f, "TOROW"),
+            Function::Wraprows => write!(f, "WRAPROWS"),
+            Function::Wrapcols => write!(f, "WRAPCOLS"),
+            Function::Expand => write!(f, "EXPAND"),
+            Function::Textsplit => write!(f, "TEXTSPLIT"),
         }
     }
 }
@@ -2296,6 +2336,16 @@ impl Model {
             Function::Bycol => self.fn_bycol(args, cell),
             Function::Byrow => self.fn_byrow(args, cell),
             Function::Makearray => self.fn_makearray(args, cell),
+            
+            // Phase 4: SQL-like and Array Manipulation
+            Function::Groupby => self.fn_groupby(args, cell),
+            Function::Pivotby => self.fn_pivotby(args, cell),
+            Function::Tocol => self.fn_tocol(args, cell),
+            Function::Torow => self.fn_torow(args, cell),
+            Function::Wraprows => self.fn_wraprows(args, cell),
+            Function::Wrapcols => self.fn_wrapcols(args, cell),
+            Function::Expand => self.fn_expand(args, cell),
+            Function::Textsplit => self.fn_textsplit(args, cell),
         }
     }
 }

@@ -1066,6 +1066,16 @@ fn get_function_args_signature(kind: &Function, arg_count: usize) -> Vec<Signatu
         Function::Bycol => vec![Signature::Vector, Signature::Scalar],
         Function::Byrow => vec![Signature::Vector, Signature::Scalar],
         Function::Makearray => vec![Signature::Scalar, Signature::Scalar, Signature::Scalar],
+        
+        // Phase 4: SQL-like and Array Manipulation
+        Function::Groupby => vec![Signature::Vector; arg_count],
+        Function::Pivotby => vec![Signature::Vector; arg_count],
+        Function::Tocol => vec![Signature::Vector; arg_count],
+        Function::Torow => vec![Signature::Vector; arg_count],
+        Function::Wraprows => vec![Signature::Vector, Signature::Scalar, Signature::Scalar],
+        Function::Wrapcols => vec![Signature::Vector, Signature::Scalar, Signature::Scalar],
+        Function::Expand => vec![Signature::Vector, Signature::Scalar, Signature::Scalar, Signature::Scalar],
+        Function::Textsplit => vec![Signature::Scalar; arg_count],
     }
 }
 
@@ -1473,5 +1483,15 @@ fn static_analysis_on_function(kind: &Function, args: &[Node]) -> StaticResult {
         Function::Bycol => StaticResult::Unknown,
         Function::Byrow => StaticResult::Unknown,
         Function::Makearray => StaticResult::Unknown,
+        
+        // Phase 4: SQL-like and Array Manipulation
+        Function::Groupby => StaticResult::Unknown,
+        Function::Pivotby => StaticResult::Unknown,
+        Function::Tocol => StaticResult::Unknown,
+        Function::Torow => StaticResult::Unknown,
+        Function::Wraprows => StaticResult::Unknown,
+        Function::Wrapcols => StaticResult::Unknown,
+        Function::Expand => StaticResult::Unknown,
+        Function::Textsplit => StaticResult::Unknown,
     }
 }
