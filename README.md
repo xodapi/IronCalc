@@ -33,6 +33,30 @@ Programmed in Rust, you will be able to use it from a variety of programming lan
 
 We will build different _skins_: in the terminal, as a desktop application or use it in your own web application.
 
+---
+
+## 🇷🇺 Russian Localization Fork
+
+This fork includes significant improvements and full Russian localization:
+
+### Features Added
+- **Ribbon Menu** with function library (120+ formulas with Russian names)
+- **Full i18n support** for Russian and English
+- **Localized number formats** (comma as decimal separator)
+- **Russian date formats** (DD.MM.YYYY)
+- **Performance benchmarks** for large datasets (500K+ rows)
+
+### New Components
+- `webapp/IronCalc/src/components/Ribbon/` - Office-style ribbon with tabs
+- `base/examples/large_benchmark.rs` - Performance testing
+
+### AI Agents Workflow
+This project is developed using AI-assisted programming with autonomous agents.
+
+**Project Lead:** Богорад Сергей Борисович (Sergey B. Bogorad)
+
+---
+
 # Docker
 
 If you have docker installed just run:

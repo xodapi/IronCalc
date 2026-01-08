@@ -124,10 +124,15 @@ pub fn format_number(value_original: f64, format: &str, locale: &Locale) -> Form
         ParsePart::General(..) => {
             // FIXME: This is "General formatting"
             // We should have different codepaths for general formatting and errors
+            let decimal_separator = &locale.numbers.symbols.decimal;
             let value_abs = value.abs();
             if (1.0e-8..1.0e+11).contains(&value_abs) {
                 let mut text = format!("{value:.9}");
                 text = text.trim_end_matches('0').trim_end_matches('.').to_string();
+                // Apply locale's decimal separator
+                if decimal_separator != "." {
+                    text = text.replace('.', decimal_separator);
+                }
                 Formatted {
                     text,
                     color: None,
@@ -145,10 +150,15 @@ pub fn format_number(value_original: f64, format: &str, locale: &Locale) -> Form
                 value /= 10.0_f64.powf(exponent);
                 let sign = if exponent < 0.0 { '-' } else { '+' };
                 let s = format!("{value:.5}");
+                let mut mantissa = s.trim_end_matches('0').trim_end_matches('.').to_string();
+                // Apply locale's decimal separator to mantissa
+                if decimal_separator != "." {
+                    mantissa = mantissa.replace('.', decimal_separator);
+                }
                 Formatted {
                     text: format!(
                         "{}E{}{:02}",
-                        s.trim_end_matches('0').trim_end_matches('.'),
+                        mantissa,
                         sign,
                         exponent.abs()
                     ),
